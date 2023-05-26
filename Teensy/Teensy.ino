@@ -17,7 +17,7 @@ Add your own display wrapper by implementing the below functions around your dis
 #include "common.h"
 
 
-#define PACKET_SIZE			64	/* Dont change - bad things happen */
+#define PACKET_SIZE			512	/* Dont change - bad things happen */
 #define COLOUR_24TO16(c)	((uint16_t)(((((c)>>16)&0xF8)<<8) | ((((c)>>8)&0xFC)<<3) | (((c)&0xF8)>>3)))
 
 
