@@ -12,7 +12,7 @@
 #define TEENSYRAWHID_PID				0x0486
 #define TEENSYRAWHID_INTERFACE			0
 #define TEENSYRAWHID_ENDPOINT			0x04
-#define TEENSYRAWHID_PACKETSIZE			64
+#define TEENSYRAWHID_PACKETSIZE			512     // select 64 for standard RawHid, or 512 for RawHid512
 
 #if 1
 #define TEENSYRAWHID_WIDTH				432
