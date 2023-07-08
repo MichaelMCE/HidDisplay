@@ -1,50 +1,33 @@
 
-#ifndef _LIBTeensyRawHid_H_
-#define _LIBTeensyRawHid_H_
+#ifndef _LIBTEENSYRAWHID_H_
+#define _LIBTEENSYRAWHID_H_
 
 
 
 #include "lusb0_usb.h"
+#include "librawhiddesc.h"
+
+
+#define RAWHID_VID				0x16C0
+#define RAWHID_PID				0x0486
+#define RAWHID_INTERFACE		0
+#define RAWHID_EP_WRITE			0x04
+#define RAWHID_EP_READ			0x83
+
+
+#define LIBUSB_VENDERID			RAWHID_VID
+#define LIBUSB_PRODUCTID		RAWHID_PID
+#define LIBUSB_ENDPOINT_WRITE	RAWHID_EP_WRITE
+#define LIBUSB_ENDPOINT_READ	RAWHID_EP_READ
 
 
 
-#define TEENSYRAWHID_VID				0x16C0
-#define TEENSYRAWHID_PID				0x0486
-#define TEENSYRAWHID_INTERFACE			0
-#define TEENSYRAWHID_ENDPOINT			0x04
-#define TEENSYRAWHID_PACKETSIZE			512     // select 64 for standard RawHid, or 512 for RawHid512
 
-#if 1
-#define TEENSYRAWHID_WIDTH				432
-#define TEENSYRAWHID_HEIGHT				240
-#else
-#define TEENSYRAWHID_WIDTH				480
-#define TEENSYRAWHID_HEIGHT				320
-#endif
-
-#define LIBUSB_VENDERID					TEENSYRAWHID_VID
-#define LIBUSB_PRODUCTID				TEENSYRAWHID_PID
-#define LIBUSB_ENDPOINT					TEENSYRAWHID_ENDPOINT
-
-
-
-// Synchronize this with Teensy.ino
-typedef struct _header_t {
-	uint32_t x1;
-	uint32_t y1;
-	uint32_t x2;
-	uint32_t y2;
-	uint32_t len;
-	uint32_t crc;		// (x1+y1+x2+y2) ^ len
-}header_t;
-
-
-
-typedef struct _rgb16_t {
+typedef struct _rgb16_t{
 	uint16_t b:5;
 	uint16_t g:6;
 	uint16_t r:5;
-}rgb16_t;
+}__attribute__ ((packed))rgb16_t;
 
 typedef struct{
 	uint8_t r;
@@ -54,37 +37,45 @@ typedef struct{
 }__attribute__ ((packed))TRGBA;		// 8888
 
 typedef struct _TeensyRawHidcxt_t{
-	uint32_t Width;
-    uint32_t Height;
+	uint32_t width;
+    uint32_t height;
+    uint32_t pitch;
     uint32_t PixelFormat;
 	uint32_t DeviceVersion;
+
+	uint8_t rgbClamp;
+	uint8_t unused[3];
+
 	char path[512+2];
-	uint32_t displayOp;
-	
+
 	struct usb_device *usbdev; 
 	usb_dev_handle *usb_handle;
 	uint32_t interface;
+	uint32_t wMaxPacketSize;
 	
 	uint8_t *frame;
-	uint8_t *frameAlt;
 	HANDLE hDev;
+	
+	uint8_t *buffer;
 }teensyRawHidcxt_t;
 
 
-typedef struct _razersb_t{
-	teensyRawHidcxt_t  teensyRawHid;
-}teensyRawHid_t;
 
 
-
-
-int libTeensyRawHid_Open (teensyRawHidcxt_t *ctx, const uint32_t interface, uint32_t index);
+int libTeensyRawHid_Open (teensyRawHidcxt_t *ctx, const uint32_t interface, uint32_t deviceIndex);
 int libTeensyRawHid_Close (teensyRawHidcxt_t *ctx);
-int libTeensyRawHid_OpenDisplay (teensyRawHidcxt_t *ctx, uint32_t index);
-int libTeensyRawHid_CloseDisplay (teensyRawHidcxt_t *ctx);
-int libTeensyRawHid_WriteImage (teensyRawHidcxt_t *ctx, header_t *idesc, void *pixelData);
 
-// legacy
+int libTeensyRawHid_OpenDisplay (teensyRawHidcxt_t *ctx);
+int libTeensyRawHid_CloseDisplay (teensyRawHidcxt_t *ctx);
+
+int libTeensyRawHid_GetConfig (teensyRawHidcxt_t *ctx, rawhid_header_t *desc);
+int libTeensyRawHid_WriteImage (teensyRawHidcxt_t *ctx, void *pixelData);
+int libTeensyRawHid_WriteImageEx (teensyRawHidcxt_t *ctx, uint16_t *pixelData, const uint8_t maxComponentValue);
+int libTeensyRawHid_WriteArea (teensyRawHidcxt_t *ctx, void *pixelData, const uint16_t x1, const uint16_t y1, const uint16_t x2, const uint16_t y2);
+
+int libTeensyRawHid_WriteTiles (teensyRawHidcxt_t *ctx, void *pixelData, const uint32_t size, const uint16_t x, const uint16_t y, const uint16_t tTiles);
+int libTeensyRawHid_SetTileConfig (teensyRawHidcxt_t *ctx, rawhid_header_t *desc);
+
 int libTeensyRawHid_GetDisplayTotal ();
 
 
