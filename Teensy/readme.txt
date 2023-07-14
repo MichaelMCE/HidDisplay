@@ -1,1 +1,1 @@
-Install "https://github.com/MichaelMCE/TeensyFlexIoDisplay" in this directory
+Install "https://github.com/MichaelMCE/FlexDisplay" in this directory
