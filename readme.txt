@@ -11,6 +11,9 @@ Instructions:
 
 Teensy is now ready to receive video frames.
 Checkout UsageExample/LCDMisc_Plugin/TeensyRawHid.c as a starting point.
+  
 
 
-
+----
+Tgx Mars demo rendered on a S6D04D1 432x240, streamed over USB:
+[![Tgx Mars demo rendered on a S6D04D1, streamed over USB](https://img.youtube.com/vi/iDyoVsCKpxk/0.jpg)](https://www.youtube.com/watch?v=iDyoVsCKpxk)
