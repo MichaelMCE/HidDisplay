@@ -26,6 +26,7 @@
 #define RAWHID_OP_FLAG_UPDATE	0x01	// set to auto update display after Op completion
 #define RAWHID_OP_FLAG_WINDOW	0x02	// use to set tile write window
 #define RAWHID_OP_FLAG_CCLAMP	0x04	// colour must be clamped according to .rgbMin/Max
+#define RAWHID_OP_FLAG_SRENDR	0x08	// strip renderer enabled
 
 typedef struct {
 	struct {
@@ -62,7 +63,9 @@ typedef struct _header_t {
 			uint8_t rgbMin;			// sets colour component range.
 			uint8_t rgbMax;			// no individual component should fall outside this range
 			
-			uint8_t string[38];		// excludes NUL
+			uint8_t stripHeight;
+			
+			uint8_t string[37];		// excludes NUL
 		}cfg;
 	
 		struct {
