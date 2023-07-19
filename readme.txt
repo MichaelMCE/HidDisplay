@@ -24,9 +24,7 @@ Look for:
 #define ENDPOINT4_CONFIG    ENDPOINT_RECEIVE_INTERRUPT + ENDPOINT_TRANSMIT_UNUSED
 Replace with:
 #define ENDPOINT3_CONFIG    ENDPOINT_RECEIVE_UNUSED + ENDPOINT_TRANSMIT_BULK
-
 #define ENDPOINT4_CONFIG    ENDPOINT_RECEIVE_BULK + ENDPOINT_TRANSMIT_UNUSED
-
 
 Modify Teenhardware\teensy\avr\cores\teensy4\usb_desc.c
 Look for "#ifdef RAWHID_INTERFACE" ~line 1200
@@ -37,7 +35,6 @@ Look for two instances off (~line 1230):
 0x03,                                   // bmAttributes (0x03=intr)
 Changed both to:
 0x02,                                   // bmAttributes (0x03=intr, 0x02=bulk)
-
 
 
 Now we're ready:
