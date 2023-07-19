@@ -17,14 +17,16 @@ After the patch and around line 630, look for the following line:
  "#elif defined(USB_RAWHID) || defined(USB_RAWHID512)"
 Within this #define section (~line 620-630) look for:
 
-Look for RAWHID_RX_INTERVAL, set this to 0
+RAWHID_RX_INTERVAL, set this to 0
 
-Look for:
+And
 #define ENDPOINT3_CONFIG    ENDPOINT_RECEIVE_UNUSED + ENDPOINT_TRANSMIT_INTERRUPT
 #define ENDPOINT4_CONFIG    ENDPOINT_RECEIVE_INTERRUPT + ENDPOINT_TRANSMIT_UNUSED
 Replace with:
 #define ENDPOINT3_CONFIG    ENDPOINT_RECEIVE_UNUSED + ENDPOINT_TRANSMIT_BULK
+
 #define ENDPOINT4_CONFIG    ENDPOINT_RECEIVE_BULK + ENDPOINT_TRANSMIT_UNUSED
+
 
 Modify Teenhardware\teensy\avr\cores\teensy4\usb_desc.c
 Look for "#ifdef RAWHID_INTERFACE" ~line 1200
