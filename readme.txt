@@ -51,28 +51,6 @@ Checkout UsageExample/LCDMisc_Plugin/TeensyRawHid.c as a starting point.
 
 
 
-
-
 ----
 Tgx's Mars demo rendered on a 432x240 S6D04D1 @ 120fps, streamed over USB from desktop:
 https://www.youtube.com/watch?v=iDyoVsCKpxk
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
