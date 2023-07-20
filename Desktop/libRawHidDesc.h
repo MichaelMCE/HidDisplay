@@ -14,6 +14,7 @@
 #define RAWHID_GFX_CLEAR		1		// clear internal buffer with colour n, don't update display. .var16[0]/16bit colour, .var32[0]/24/32bit colour
 #define RAWHID_GFX_SCROLL		2		// hardware scroll buffer n rows/cols. only if display support scroll
 #define RAWHID_GFX_ROTATE		3		// hardware rotate. .var8[0]/rotation (0 to 3)
+#define RAWHID_GFX_BACKLIGHT	4		// panel backlight brightness. .var8[0] (0 to 127)
 
 #define RAWHID_BPP_1			1
 #define RAWHID_BPP_4			2
@@ -64,8 +65,8 @@ typedef struct _header_t {
 			uint8_t rgbMax;			// no individual component should fall outside this range
 			
 			uint8_t stripHeight;
-			
-			uint8_t string[37];		// excludes NUL
+			uint8_t unused[5];
+			uint8_t string[32];		// excludes NUL
 		}cfg;
 	
 		struct {
@@ -99,6 +100,7 @@ typedef struct _header_t {
 
 	uint32_t crc;
 }rawhid_header_t;
+
 
 
 
