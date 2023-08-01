@@ -7,8 +7,8 @@
 #include <process.h>
 #include "plugin.h"
 #include "scriptval.h"
-#include "../libTeensyRawHid\libTeensyRawHid.h"
-#include "../libTeensyRawHid\mmx_rgb.h"
+#include "../../libTeensyRawHid/libTeensyRawHid.h"
+#include "../../libTeensyRawHid/mmx_rgb.h"
 
 
 #define EXPORT			__declspec(dllexport)

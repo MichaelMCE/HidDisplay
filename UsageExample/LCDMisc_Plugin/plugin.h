@@ -66,7 +66,7 @@ struct LcdInfo {
 	// String identifying the LCD.  Ideally, should be unique.
 	// Can be used to identify the display in scripts,
 	// though currently not used much/at all.  Must be in UTF8.
-	const char *id;
+	char *name;
 
 	// At the moment, mostly not used...
 	int refreshRate;

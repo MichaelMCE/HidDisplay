@@ -1,2 +1,2 @@
-LCDMisc video output plugin for the Teensy 4.1 & RawHid
+LCDMisc video output plugin for the Teensy 4.1
 
