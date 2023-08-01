@@ -230,7 +230,7 @@ int libTeensyRawHid_WriteArea (teensyRawHidcxt_t *ctx, void *pixelData, const ui
 	if (libTeensyRawHid_WriteData(ctx, buffer, sizeof(rawhid_header_t)) == sizeof(rawhid_header_t)){
 		int ret = libTeensyRawHid_WriteData(ctx, pixelData, desc->u.write.len);
 		if (ret != desc->u.write.len){
-			//printf("libTeensyRawHid_WriteImage ret != len: len = %i, ret = %i\n", desc->u.write.len, ret);
+			printf("libTeensyRawHid_WriteImage ret != len: len = %i, ret = %i\n", desc->u.write.len, ret);
 		}
 		return (ret == desc->u.write.len);
 	}
