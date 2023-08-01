@@ -274,7 +274,7 @@ int main (int margc, char **cargv)
 		}else if (!wcscmp(L"-follow", cmd)){	// follow cursor
 			followCursor = 1;
 		
-		}else if (!wcscmp(L"-help", cmd)){	// follow cursor
+		}else if (!wcscmp(L"-help", cmd)){
 			printHelp();
 			return 0;
 		}
