@@ -7,8 +7,8 @@
 #include <process.h>
 #include "plugin.h"
 #include "scriptval.h"
-#include "libTeensyRawHid\libTeensyRawHid.h"
-#include "libTeensyRawHid\mmx_rgb.h"
+#include "../libTeensyRawHid\libTeensyRawHid.h"
+#include "../libTeensyRawHid\mmx_rgb.h"
 
 
 #define EXPORT			__declspec(dllexport)
@@ -158,8 +158,18 @@ void teensyRawHid_Update (teensyRawHidcxt_t *ctx, uint8_t *pixels, const int wid
 
 CALLBACK void lcdmisc_update (LcdInfo *info, BitmapInfo *bmp)
 {
-	if (!rawhid.isShuttingdown && rawhid.initialized)
+	static int sendFirstTwice = 0;
+	
+	if (!rawhid.isShuttingdown && rawhid.initialized){
 		teensyRawHid_Update(&rawhid.ctx, bmp->bitmap, bmp->width, bmp->height);
+		
+		// first update is always corrupted. send again to fix
+		if (!sendFirstTwice){
+			sendFirstTwice = 0xFF;
+			teensyRawHid_Update(&rawhid.ctx, bmp->bitmap, bmp->width, bmp->height);
+			teensyRawHid_Update(&rawhid.ctx, bmp->bitmap, bmp->width, bmp->height);
+		}
+	}
 }
 
 CALLBACK void lcdmisc_destroy (LcdInfo *info)
