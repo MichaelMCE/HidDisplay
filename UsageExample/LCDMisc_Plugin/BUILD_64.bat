@@ -7,7 +7,7 @@ gcc -m64 -DLIBUSB_BLOCKS -DUSE_MMX -DHAVE_MMX -DHAVE_MMX1 -mmmx -Wno-unused-func
 
 rem libs\libusb.a
 
-dllwrap -m64 RawHid.o libteensyRawHid.o ../../libTeensyRawHid/libusb64.a -o RawHid_64.dll --output-def RawHid.def -k --add-stdcall-alias
-strip RawHid_64.dll
+dllwrap -m64 RawHid.o libteensyRawHid.o ../../libTeensyRawHid/libusb64.a -o HidDisplay_64.dll --output-def HidDisplay.def -k --add-stdcall-alias
+strip HidDisplay_64.dll
 
 
