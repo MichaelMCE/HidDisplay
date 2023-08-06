@@ -2,19 +2,25 @@
 /*
 	FT5216 i2c controller
 	Michael McE
+	
+	Does not handle press release. That's up to you.
+	06/08/23
 */
 
 
 #include <Wire.h>
 #include "FT5216.h"
 
+#define FT5216_obj		Wire2	// using i2c pins 24 & 25 on T4.1
 #define FT5216_ADDR		0x38	// i2c address
-#define FT5216_INT		33		// using pin 33 for interrupt
-	
+#define FT5216_INT		33		// using pin 33 for touch ready interrupt signal
+#define FT5216_SPEED	1000000	// set speed in hz
+
+
 
 typedef struct _touch {
-	int idx;
-	int points;		// number of points (fingers) measured on panel 
+	int idx;		// points to which multi point register we wish to read
+	int points;		// number of points (fingers) measured on panel this scan
 	int x;
 	int y;
 	
@@ -32,39 +38,39 @@ static const uint8_t FT5216_RegAddrLUT[10] = {0x03, 0x09, 0x0F, 0x15, 0x1B, 0x21
 
 void FT5216_start ()
 {
-	Wire2.beginTransmission(FT5216_ADDR);
+	FT5216_obj.beginTransmission(FT5216_ADDR);
 }
 
 int FT5216_end ()
 {
-	return Wire2.endTransmission(false);
+	return FT5216_obj.endTransmission(false);
 }
 
 int FT5216_write (const uint8_t value)
 {
-	return Wire2.write(value);
+	return FT5216_obj.write(value);
 }
 
 uint8_t FT5216_readByte ()
 {
-	return Wire2.read();
+	return FT5216_obj.read();
 }
 
 int FT5216_writeReg (const uint8_t reg, const uint8_t value)
 {
 	uint8_t data[] = {reg, value};
-	return Wire2.write(data, sizeof(data));
+	return FT5216_obj.write(data, sizeof(data));
 }
 
 int FT5216_isAvailable ()
 {
-	return Wire2.available();
+	return FT5216_obj.available();
 }
 
 void FT5216_begin ()
 {
-	Wire2.begin();
-	Wire2.setClock(200000);
+	FT5216_obj.begin();
+	FT5216_obj.setClock(FT5216_SPEED);
 	
 	// Delay to enter 'Monitor' status (s)
     FT5216_writeReg(FT5216_REG_TIMEENTERMONITOR, 0x0A);
@@ -74,12 +80,11 @@ void FT5216_begin ()
 
     // Timer to enter 'idle' when in 'Monitor' (ms)
     FT5216_writeReg(FT5216_REG_PERIODMONITOR, 0x28);
-	
 }
 
 uint8_t FT5216_request (const uint8_t length)
 {
-	return Wire2.requestFrom((uint8_t)FT5216_ADDR, (uint8_t)length, (bool)true);
+	return FT5216_obj.requestFrom((uint8_t)FT5216_ADDR, (uint8_t)length, (bool)true);
 }	
 
 void touch_ISR ()
@@ -147,29 +152,29 @@ void setup ()
 	Serial.begin(115200);
 	while (!Serial);
 
-	printf("FT5216 Capacitive touchscreen test\r\n");
-
+	printf("FT5216 Capacitive touchscreen (i2c)\r\n");
 	touch_begin(FT5216_INT, touch_ISR);
+}
 
-	delay(100);
+int touch_process (touch_t *touch)
+{
+	int tPoints = touch_getTotal(touch);
+	if (tPoints){
+		printf("\r\n");
+		for (int i = 0; i < tPoints; i++){
+			if (touch_read(touch))
+				printf("Touch %i: %i %i\r\n", i+1, touch->x, touch->y);
+		}
+	}
+	return tPoints;
 }
 
 void loop ()
 {
-	if (!touchInSignal){
-		return;
-	}else{
+	if (touchInSignal){
 		touchInSignal = 0;
-	}
-
-	touch_t touch = {0};
-	int tPoints = touch_getTotal(&touch);
-	if (tPoints){
-		printf("\r\n");
 		
-		for (int i = 0; i < tPoints; i++){
-			if (touch_read(&touch))
-				printf("Touch %i: %i %i\r\n", i+1, touch.x, touch.y);
-		}
+		touch_t touch = {0};
+		touch_process(&touch);
 	}
 }
