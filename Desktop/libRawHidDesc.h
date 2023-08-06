@@ -10,6 +10,7 @@
 #define RAWHID_OP_WRITEAREA		4
 #define RAWHID_OP_SETCFG		5
 #define RAWHID_OP_WRITETILE		6
+#define RAWHID_OP_TOUCH			7
 
 #define RAWHID_GFX_CLEAR		1		// clear internal buffer with colour n, don't update display. .var16[0]/16bit colour, .var32[0]/24/32bit colour
 #define RAWHID_GFX_SCROLL		2		// hardware scroll buffer n rows/cols. only if display support scroll
@@ -28,6 +29,7 @@
 #define RAWHID_OP_FLAG_WINDOW	0x02	// use to set tile write window
 #define RAWHID_OP_FLAG_CCLAMP	0x04	// colour must be clamped according to .rgbMin/Max
 #define RAWHID_OP_FLAG_SRENDR	0x08	// strip renderer enabled
+#define RAWHID_OP_FLAG_LAYERS	0x10	// layers enabled. Used with EXTMEM/PSRAM
 
 typedef struct {
 	struct {
@@ -63,12 +65,29 @@ typedef struct _header_t {
 			
 			uint8_t rgbMin;			// sets colour component range.
 			uint8_t rgbMax;			// no individual component should fall outside this range
-			
 			uint8_t stripHeight;
-			uint8_t unused[5];
+			uint8_t layersActive;	// contains active write layer. index from 0 to BUFFER_LAYERS_TOTAL-1
+			
+			uint8_t layersTotal;	// number of available layers
+			uint8_t unused[3];
+			
 			uint8_t string[32];		// excludes NUL
 		}cfg;
-	
+
+		struct {
+			int stub;
+		}layers;
+		
+		struct {
+			uint8_t tPoints;		// points measured (fingers pressed) this scan instance
+			uint8_t unused2;
+			uint8_t unused3;
+			uint8_t unused4;
+			
+			uint16_t x[10];
+			uint16_t y[10];
+		}touch;
+		
 		struct {
 			uint16_t x1;
 			uint16_t y1;
