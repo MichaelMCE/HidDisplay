@@ -28,6 +28,8 @@ USB Detail:
 #endif
 #if ENABLE_TOUCH_FT5216
 #include "FT5216/FT5216.h"
+
+static touch_t touch;
 #endif
 
 
@@ -44,7 +46,6 @@ typedef struct _recvData{
 static config_t config;
 static uint8_t *recvBuffer = NULL;
 static usb_rawhid_classex RawHid;
-static touch_t touch;
 
 
 static inline int usb_recv2 (void **buffer)
