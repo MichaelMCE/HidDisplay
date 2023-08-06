@@ -3,7 +3,7 @@
 
 Intended for compiling with: https://github.com/MichaelMCE/FlexDisplay
 To compile: In Arduino Tools menu, select USB Type 'Raw HID 512'
-Timings intended for and tested with CPU Speed 720mhz
+Timings intended for and tested with CPU speed @ 720mhz
 
 
 USB Detail:
@@ -26,6 +26,11 @@ USB Detail:
 #if USE_STARTUP_IMAGE
 #include "startup_256x142_16.h"
 #endif
+#if ENABLE_TOUCH_FT5216
+#include "FT5216/FT5216.h"
+#endif
+
+
 
 
 
@@ -39,7 +44,7 @@ typedef struct _recvData{
 static config_t config;
 static uint8_t *recvBuffer = NULL;
 static usb_rawhid_classex RawHid;
-
+static touch_t touch;
 
 
 static inline int usb_recv2 (void **buffer)
@@ -117,10 +122,10 @@ static void setStartupImage ()
 
 void setup ()
 {
-	//Serial.begin(9600);
+	Serial.begin(115200);
 	//while (!Serial);
 	//printf("RawHid\r\n");
-	//printf(CFG_STRING "\r\n");
+	printf(CFG_STRING "\r\n");
 
 	// not needed here as is called from within teensy4/usb.c
 	//usb_rawhid_configure();
@@ -132,6 +137,10 @@ void setup ()
 #if USE_STARTUP_IMAGE
 	setStartupImage();
 	setStartupImage();
+#endif
+
+#if ENABLE_TOUCH_FT5216
+	touch_start(FT5216_INT);
 #endif
 }
 
@@ -232,7 +241,7 @@ static void opSendDeviceCfg (rawhid_header_t *desc)
 	desc->u.cfg.bpp = RAWHID_BPP_16;
 	desc->u.cfg.width = TFT_WIDTH;
 	desc->u.cfg.height = TFT_HEIGHT;
-	desc->u.cfg.pitch = desc->u.cfg.width*sizeof(uint16_t);
+	desc->u.cfg.pitch = desc->u.cfg.width * sizeof(uint16_t);
 
 #ifdef COL_CLAMP_MAX
 	desc->flags |= RAWHID_OP_FLAG_CCLAMP;
@@ -243,6 +252,11 @@ static void opSendDeviceCfg (rawhid_header_t *desc)
 	desc->u.cfg.rgbMax = 0;
 #endif
 
+#if USE_BUFFER_LAYERS
+	desc->flags |= RAWHID_OP_FLAG_LAYERS;
+	desc->u.cfg.layersActive = tft_getWriteLayer();
+	desc->u.cfg.layersTotal = BUFFER_LAYERS_TOTAL;
+#endif
 
 #if USE_STRIP_RENDERER
 	desc->flags |= RAWHID_OP_FLAG_SRENDR;
@@ -383,11 +397,35 @@ void opRecvImageArea (rawhid_header_t *header)
 		tft_update_area(x1, y1, x2, y2);
 }
 
+static void do_touch ()
+{
+#if ENABLE_TOUCH_FT5216
+
+	static int pressed = 0;
+
+	if (touch_isPressed()){
+		memset(&touch, 0, sizeof(touch));
+
+		if (touch_process(&touch)){
+			pressed = 1;
+			for (int i = 0; i < touch.tPoints; i++)
+				printf("Touch %i: %i %i\r\n", i+1, touch.points[i].x, touch.points[i].y);
+		}
+	}else if (pressed){
+		pressed = 0;
+		printf("Touch released\r\n");
+	}
+#endif
+}
+
+
 void loop ()
 {
 	rawhid_header_t *desc = (rawhid_header_t*)recvBuffer;
 		
 	while (1){
+	  do_touch();
+
 	  int bytesIn = usb_recv2((void**)&desc);
 	  if (bytesIn != PACKET_SIZE) return;
 

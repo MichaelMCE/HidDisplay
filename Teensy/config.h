@@ -6,16 +6,19 @@
 
 #define USE_DMAMEM_BUFFER		0		// set this to 1 to use DMAMEM for the tft buffer
 #define USE_EXTMEM_BUFFER		0		// set this to 1 to use PSRAM for the tft buffer
-#define USE_EXTMEM_ALLOC		0		// use this to divert uFont allocations to PSRAM. Beaware - this will cost 32k of RAM1
 #define USE_STRIP_RENDERER		1		// enable/disables updates to display by STRIP_RENDERER_HEIGHT rows per iterations per frame
 #define STRIP_RENDERER_HEIGHT	32		// as above. Intended for use with the larger panels
 #define USE_STARTUP_IMAGE		1		// display a power on image at start up
+#define USE_BUFFER_LAYERS		1		// enable muliple backbuffer lateys. Is valid with USE_EXTMEM_BUFFER/PSRAM only. Can not use with USE_STRIP_RENDERER
+#define BUFFER_LAYERS_TOTAL		8		// make room for n backbuffer layers. Each layer size is = (WIDTH * HEIGHT * 2)
+#define ENABLE_TOUCH_FT5216		1
+
 
 // there can only be one
 #define USE_FLEXTFT_ILI9486		0
 #define USE_FLEXTFT_S6D04D1		0
-#define USE_FLEXTFT_ILI9806		1
-#define USE_FLEXTFT_RM68120		0
+#define USE_FLEXTFT_ILI9806		0
+#define USE_FLEXTFT_RM68120		1
 #define USE_FLEXTFT_R61529		0
 #define USE_FLEXTFT_LG4572B		0
 #define USE_FLEXTFT_NT35510		0
@@ -76,7 +79,7 @@
 #define TFT_INTENSITY			50		// PWM value from 0 to 255
 // Read is 37
 // Write is 36
-
+#define FT5216_INT				34		// FT5216 touch data ready interrupt pin
 
 
 #if (USE_DMAMEM_BUFFER)
