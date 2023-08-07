@@ -7,11 +7,7 @@ Before compiling, a few modifications are required to the core Teensys4 source:
 1) Apply this patch, or manually modify:
 https://github.com/PaulStoffregen/cores/pull/629
 
-2) Increase USB butter size:
-Modify Teenhardware\teensy\avr\cores\teensy4\usb_rawhid.c
-Change "#define RX_NUM .." to "#define RX_NUM (511)"
-
-3) Change USB endpoint type from Interrupt to Bulk:
+2) Change USB endpoint type from Interrupt to Bulk:
 Modify Teenhardware\teensy\avr\cores\teensy4\usb_desc.h
 After the patch and around line 630, look for the following line:
  "#elif defined(USB_RAWHID) || defined(USB_RAWHID512)"
