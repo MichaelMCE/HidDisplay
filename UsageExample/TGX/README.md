@@ -4,8 +4,10 @@
   
   
 # TGX - a tiny/teensy graphics library
-
-
+<p align="center">
+<a href="http://www.youtube.com/watch?feature=player_embedded&v=iDyoVsCKpxk" target="_blank"><img src="http://img.youtube.com/vi/iDyoVsCKpxk/0.jpg" 
+ width="240" height="180" border="10" /></a>  
+  
 <p align="center">
 <a href="http://www.youtube.com/watch?feature=player_embedded&v=XxL15cQIPi8
 " target="_blank"><img src="http://img.youtube.com/vi/XxL15cQIPi8/0.jpg" 
