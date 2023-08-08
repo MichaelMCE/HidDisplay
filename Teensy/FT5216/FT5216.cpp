@@ -11,6 +11,7 @@
 #include <Wire.h>
 #include "../librawhiddesc.h"
 #include "FT5216.h"
+#include "../config.h"
 
 #define FT5216_obj		Wire2	// using i2c pins 24 & 25 on T4.1
 #define FT5216_ADDR		0x38	// i2c address
@@ -79,15 +80,57 @@ uint8_t FT5216_request (const uint8_t length)
 	return FT5216_obj.requestFrom((uint8_t)FT5216_ADDR, (uint8_t)length, (bool)true);
 }	
 
+static void FT5216_applyRotation (const int direction, uint16_t *x, uint16_t *y)
+{
+    uint16_t _x = *x;
+    uint16_t _y = *y;
+
+    switch (direction){
+    case TOUCH_DIR_LRTB:
+        *x = _x;
+        *y = _y;
+        break;
+    case TOUCH_DIR_LRBT:
+        *x = _x;
+        *y = TFT_HEIGHT-1 - _y;
+        break;
+    case TOUCH_DIR_RLTB:
+        *x = TFT_WIDTH-1  - _x;
+        *y = _y;
+        break;
+    case TOUCH_DIR_RLBT:
+        *x = TFT_WIDTH-1  - _x;
+        *y = TFT_HEIGHT-1 - _y;
+        break;
+    case TOUCH_DIR_TBLR:
+        *x = _y;
+        *y = _x;
+        break;
+    case TOUCH_DIR_BTLR:
+        *x = _y;
+        *y = TFT_WIDTH-1  - _x;
+        break;
+    case TOUCH_DIR_TBRL:
+        *x = TFT_HEIGHT-1 - _y;
+        *y = _x;
+        break;
+    case TOUCH_DIR_BTRL:
+        *x = TFT_HEIGHT-1 - _y;
+        *y = TFT_WIDTH-1  - _x;
+        break;
+
+    default:
+        break;
+    }
+}
+
 int touch_getTotal (touch_t *touch)
 {
 	uint8_t count = FT5216_request(1);
 	if (count){
 		touch->tPoints = FT5216_readByte()&0x0F;
-		//if (touch->tPoints > (int)sizeof(FT5216_RegAddrLUT))
-		//	touch->tPoints = sizeof(FT5216_RegAddrLUT);
-		if (touch->tPoints > 5)
-			touch->tPoints = 5;
+		if (touch->tPoints > (int)sizeof(FT5216_RegAddrLUT))
+			touch->tPoints = sizeof(FT5216_RegAddrLUT);
 		return touch->tPoints;
 	}else{
 		return 0;
@@ -125,6 +168,10 @@ int touch_read (touch_t *touch)
 		touch->tPoints = 0;
 		return 0;
 	}
+	
+	if (touch->direction != TOUCH_DIR_NONE)
+		FT5216_applyRotation(touch->direction, &touch->x, &touch->y);
+
    	touch->points[touch->idx].x = touch->x;
    	touch->points[touch->idx].y = touch->y;
 
