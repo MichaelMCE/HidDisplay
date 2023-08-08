@@ -33,8 +33,11 @@ USB Detail:
 typedef struct _touchCtx {
 	rawhid_header_t header;
 	touch_t touch;
-	int enabled;			// software toggle switch
-	int pressed;
+	
+	uint8_t enabled;	// send reports. does not reflect current FT5216 comm state
+	uint8_t pressed;	// is being pressed
+	uint8_t rotate;		// touch rotation direction
+	uint8_t unused;
 }touchCtx_t;
 static touchCtx_t touchCtx;
 
@@ -127,9 +130,17 @@ static void setStartupImage ()
 }
 #endif
 
+static void touch_init ()
+{
+	touchCtx.enabled = 0;
+	touchCtx.pressed = 0;
+	touchCtx.rotate = TOUCH_DIR_NONE;
+	touch_start(FT5216_INT);
+}
+
 void setup ()
 {
-	Serial.begin(115200);
+	//Serial.begin(115200);
 	//while (!Serial);
 	//printf("Name: " CFG_STRING "\r\n");
 #if ENABLE_DEVICE_SERIAL
@@ -151,7 +162,7 @@ void setup ()
 #endif
 
 #if ENABLE_TOUCH_FT5216
-	touch_start(FT5216_INT);
+	touch_init();
 #endif
 }
 
@@ -427,6 +438,9 @@ static void opTouchCtrl (touchCtx_t *ctx, rawhid_header_t *header)
 		ctx->enabled = 1;
 	else if (header->flags&RAWHID_OP_FLAG_REPORTSOFF)
 		ctx->enabled = 0;
+	
+	if (header->flags&RAWHID_OP_FLAG_TOUCHDIR)
+		ctx->rotate = header->u.touch.direction;
 }
 
 static void opSendTouch (touchCtx_t *ctx, touch_t *touch, const int isReleased)
@@ -451,6 +465,7 @@ static void do_touch (touchCtx_t *ctx, touch_t *touch)
 {
 	if (touch_isPressed()){
 		memset(touch, 0, sizeof(touch_t));
+		touch->direction = ctx->rotate;
 		
 		if (touch_process(touch)){
 			ctx->pressed = 1;
