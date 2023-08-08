@@ -23,6 +23,8 @@ typedef struct _rawhid_t{
 	config_t config;
 	int isShuttingdown;
 	int initialized;
+	
+	HANDLE hTouchThread;
 }rawHidDisplay_t;
 
 static rawHidDisplay_t rawhid;
@@ -56,19 +58,6 @@ static void frame32ToBuffer16 (uint8_t *pixels, uint8_t *buffer, const int width
 			}
 			out = (uint16_t*)((uint8_t*)out+cpitch);
 		}
-	}
-}
-
-static void teensyRawHid_shutdown ()
-{
-	rawhid.isShuttingdown = 1;
-	rawhid.initialized = 0;
-
-	libTeensyRawHid_CloseDisplay(&rawhid.ctx);
-
-	if (rawhid.ctx.frame){
-		free(rawhid.ctx.frame);
-		rawhid.ctx.frame = NULL;
 	}
 }
 
@@ -213,10 +202,65 @@ void setDisplayMetrics (rawHidDisplay_t *rawhid, const int width, const int heig
 	rawhid->ctx.rgbClamp = rgbClamp;
 }
 
+unsigned int __stdcall touchListenerThread (void *ptr)
+{
+	teensyRawHidcxt_t *ctx = &rawhid.ctx;
+	
+	char eventArg[128];
+	touch_t touch;
+	int touchState = 2;
+		
+	while (!rawhid.isShuttingdown && rawhid.initialized){
+		if (libTeensyRawHid_GetReportWait(ctx, &touch)){
+			if (!rawhid.initialized) break;
+
+			if (touch.flags == RAWHID_OP_TOUCH_POINTS){
+				__mingw_snprintf(eventArg, 64, "%i,%i,%i,%i", touch.x, touch.y, (int)touch.time, (int)GetTickCount());
+				if (touchState == 2)									// previous  event was release, so this is a down
+					rawhid.LMC->TriggerEvent(rawhid.LMC->id, "touchDown", eventArg);
+				else if (touchState == 1)								// previous event was down, so this is a move
+					rawhid.LMC->TriggerEvent(rawhid.LMC->id, "touchMove", eventArg);
+					
+				touchState = 1;
+				
+			}else if (touch.flags == RAWHID_OP_TOUCH_RELEASE){
+				snprintf(eventArg, sizeof(eventArg), "%i,%i,%i,%i", touch.x, touch.y, (int)touch.time, (int)GetTickCount());
+				rawhid.LMC->TriggerEvent(rawhid.LMC->id, "touchUp", eventArg);
+				touchState = 2;
+			}
+		}else{
+			Sleep(5);
+		}
+	};
+
+	_endthreadex(1);
+	return 1;
+}
+
+unsigned int touchStartListenerThread (rawHidDisplay_t *ctx, const int threadFlags)
+{
+	unsigned int tid = 0;
+	ctx->hTouchThread = (HANDLE)_beginthreadex(NULL, 0, touchListenerThread, ctx, threadFlags, &tid);
+	return tid;
+}
+
+void touchStopistenerThreadWait (rawHidDisplay_t *ctx)
+{
+	libTeensyRawHid_TouchReportEnable(&ctx->ctx, 0, 0);
+	ResumeThread(ctx->hTouchThread);
+	WaitForSingleObject(ctx->hTouchThread, INFINITE);
+}
+
+void touch_init (rawHidDisplay_t *ctx)
+{
+	libTeensyRawHid_TouchReportEnable(&ctx->ctx, 1, TOUCH_DIR_RLBT);
+	touchStartListenerThread(ctx, HIGH_PRIORITY_CLASS);
+}
+
 int teensyRawHid_init ()
 {
 	if (!libTeensyRawHid_OpenDisplay(&rawhid.ctx)){
-		if (!openDisplayWait(500))
+		if (!openDisplayWait(750))
 			return 0;
 	}
 
@@ -232,6 +276,8 @@ int teensyRawHid_init ()
 
 		if (!rawhid.ctx.frame)
 			rawhid.ctx.frame = calloc(rawhid.ctx.height, rawhid.ctx.pitch);
+			
+		touch_init(&rawhid);
 	}
 
 	return (rawhid.ctx.frame != NULL);
@@ -241,8 +287,8 @@ void initWindow (LcdInfo *win)
 {	
 	memset(win, 0, sizeof(LcdInfo));
 	win->bpp = 32;
-	win->refreshRate = 30;			// doesn't do anything, but still
-	win->name = "rawhiddisplay";	// name must be const (bug in lcdmisc)
+	win->refreshRate = 30;		// doesn't do anything, but still
+	win->name = "hiddisplay";	// name must be const (bug in lcdmisc)
 	win->width = rawhid.ctx.width;
 	win->height = rawhid.ctx.height;
 	win->Update = lcdmisc_update;
@@ -264,6 +310,20 @@ EXPORT CALLBACK int lcdInit (LcdCallbacks *LCDCallbacks)
 		return 1;
 	}
 	return 0;
+}
+
+static void teensyRawHid_shutdown ()
+{
+	rawhid.isShuttingdown = 1;
+	rawhid.initialized = 0;
+
+	touchStopistenerThreadWait(&rawhid);
+	libTeensyRawHid_CloseDisplay(&rawhid.ctx);
+
+	if (rawhid.ctx.frame){
+		free(rawhid.ctx.frame);
+		rawhid.ctx.frame = NULL;
+	}
 }
 
 EXPORT CALLBACK void lcdUninit ()
@@ -328,3 +388,4 @@ EXPORT CALLBACK void razersb_ClearDisplayPad ()
 EXPORT CALLBACK void razersb_ClearDisplayKeys ()
 {
 }
+
