@@ -257,6 +257,16 @@ int libTeensyRawHid_GetConfig (teensyRawHidcxt_t *ctx, rawhid_header_t *desc)
 	return 0;
 }
 
+int libTeensyRawHid_GetReportWait (teensyRawHidcxt_t *ctx, touch_t *touch)
+{
+	int ret = libTeensyRawHid_ReadData(ctx, ctx->buffer, ctx->wMaxPacketSize);
+	if (ret == ctx->wMaxPacketSize){
+		rawhid_header_t *header = (rawhid_header_t*)ctx->buffer;
+		memcpy(touch, &header->u.touch, sizeof(*touch));
+	}
+	return (ret == ctx->wMaxPacketSize);
+}
+
 int libTeensyRawHid_ClearDisplay (teensyRawHidcxt_t *ctx, const uint16_t colour)
 {
 	char buffer[ctx->wMaxPacketSize];
@@ -270,6 +280,24 @@ int libTeensyRawHid_ClearDisplay (teensyRawHidcxt_t *ctx, const uint16_t colour)
 	desc->crc = calcWriteCrc(desc);	
 
 	return (libTeensyRawHid_WriteData(ctx, buffer, sizeof(rawhid_header_t)) == sizeof(rawhid_header_t));
+}
+
+int libTeensyRawHid_TouchReportEnable (teensyRawHidcxt_t *ctx, const int state)
+{
+	memset(ctx->buffer, 0, ctx->wMaxPacketSize);
+	rawhid_header_t *desc = (rawhid_header_t*)ctx->buffer;
+
+	desc->op = RAWHID_OP_TOUCH;
+	if (state)
+		desc->flags = RAWHID_OP_FLAG_REPORTSON;
+	else
+		desc->flags = RAWHID_OP_FLAG_REPORTSOFF;
+	desc->crc = calcWriteCrc(desc);	
+	
+	if (libTeensyRawHid_WriteData(ctx, desc, sizeof(rawhid_header_t)) == sizeof(rawhid_header_t))
+		return 1;
+	
+	return 0;
 }
 
 int libTeensyRawHid_SetTileConfig (teensyRawHidcxt_t *ctx, rawhid_header_t *desc)

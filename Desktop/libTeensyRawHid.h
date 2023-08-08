@@ -78,6 +78,8 @@ int libTeensyRawHid_SetTileConfig (teensyRawHidcxt_t *ctx, rawhid_header_t *desc
 
 int libTeensyRawHid_GetDisplayTotal ();
 
+int libTeensyRawHid_TouchReportEnable (teensyRawHidcxt_t *ctx, const int state);
+int libTeensyRawHid_GetReportWait (teensyRawHidcxt_t *ctx, touch_t *touch);
 
 #endif
 

@@ -11,6 +11,7 @@
 #define RAWHID_OP_SETCFG		5
 #define RAWHID_OP_WRITETILE		6
 #define RAWHID_OP_TOUCH			7
+#define RAWHID_OP_SERIAL		8
 
 #define RAWHID_GFX_CLEAR		1		// clear internal buffer with colour n, don't update display. .var16[0]/16bit colour, .var32[0]/24/32bit colour
 #define RAWHID_GFX_SCROLL		2		// hardware scroll buffer n rows/cols. only if display support scroll
@@ -25,11 +26,40 @@
 #define RAWHID_BPP_32			6
 
 
-#define RAWHID_OP_FLAG_UPDATE	0x01	// set to auto update display after Op completion
-#define RAWHID_OP_FLAG_WINDOW	0x02	// use to set tile write window
-#define RAWHID_OP_FLAG_CCLAMP	0x04	// colour must be clamped according to .rgbMin/Max
-#define RAWHID_OP_FLAG_SRENDR	0x08	// strip renderer enabled
-#define RAWHID_OP_FLAG_LAYERS	0x10	// layers enabled. Used with EXTMEM/PSRAM
+#define RAWHID_OP_FLAG_UPDATE		0x01	// set to auto update display after Op completion
+#define RAWHID_OP_FLAG_WINDOW		0x02	// use to set tile write window
+#define RAWHID_OP_FLAG_CCLAMP		0x04	// colour must be clamped according to .rgbMin/Max
+#define RAWHID_OP_FLAG_SRENDR		0x08	// strip renderer enabled
+#define RAWHID_OP_FLAG_LAYERS		0x10	// layers enabled. Used with EXTMEM/PSRAM
+#define RAWHID_OP_FLAG_REPORTSON	0x20	// switch on touch control reports, if compiled in
+#define RAWHID_OP_FLAG_REPORTSOFF	0x40	// turn off touch control reports
+
+#define RAWHID_OP_TOUCH_INVALID		0x00
+#define RAWHID_OP_TOUCH_POINTS		0x01
+#define RAWHID_OP_TOUCH_RELEASE		0x02	// is a release msg when set
+
+
+typedef struct _touch {
+	uint8_t idx;		// points to which multi point register we wish to read
+	uint8_t flags;		// RAWHID_OP_TOUCH_xxx
+	uint8_t tPoints;	// number of points (fingers) measured on panel this scan
+	uint8_t unused;
+	
+	uint32_t time;
+	
+	uint16_t x;
+	uint16_t y;
+	
+	struct {
+		uint16_t x;
+		uint16_t y;
+	}points[10];
+
+	uint8_t xh;
+	uint8_t xl;
+	uint8_t yh;
+	uint8_t yl;
+}touch_t;
 
 typedef struct {
 	struct {
@@ -75,19 +105,14 @@ typedef struct _header_t {
 		}cfg;
 
 		struct {
+			uint32_t u32;			// DEVICE_SERIAL_NUM
+			uint8_t str[16];		// DEVICE_SERIAL_STR
+		}serialid;
+
+		struct {
 			int stub;
 		}layers;
-		
-		struct {
-			uint8_t tPoints;		// points measured (fingers pressed) this scan instance
-			uint8_t unused2;
-			uint8_t unused3;
-			uint8_t unused4;
-			
-			uint16_t x[10];
-			uint16_t y[10];
-		}touch;
-		
+
 		struct {
 			uint16_t x1;
 			uint16_t y1;
@@ -114,11 +139,12 @@ typedef struct _header_t {
 			uint16_t total;			// number of tiles to write. tile writes will wrap around the .window
 		}tiles;
 
-		config_t config;
+		config_t config;			// sizeof(config_t) should be 8 bytes
+		touch_t touch;				// sizeof(touch_t) should be 52 bytes
 	}u;
 
 	uint32_t crc;
-}rawhid_header_t;
+}rawhid_header_t;					// sizeof(rawhid_header_t) should be 64 bytes
 
 
 
