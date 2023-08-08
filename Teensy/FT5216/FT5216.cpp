@@ -9,6 +9,7 @@
 
 
 #include <Wire.h>
+#include "../librawhiddesc.h"
 #include "FT5216.h"
 
 #define FT5216_obj		Wire2	// using i2c pins 24 & 25 on T4.1
@@ -83,8 +84,10 @@ int touch_getTotal (touch_t *touch)
 	uint8_t count = FT5216_request(1);
 	if (count){
 		touch->tPoints = FT5216_readByte()&0x0F;
-		if (touch->tPoints > (int)sizeof(FT5216_RegAddrLUT))
-			touch->tPoints = sizeof(FT5216_RegAddrLUT);
+		//if (touch->tPoints > (int)sizeof(FT5216_RegAddrLUT))
+		//	touch->tPoints = sizeof(FT5216_RegAddrLUT);
+		if (touch->tPoints > 5)
+			touch->tPoints = 5;
 		return touch->tPoints;
 	}else{
 		return 0;
@@ -116,14 +119,36 @@ int touch_read (touch_t *touch)
 	touch->yl = FT5216_readByte();
 	touch->x  = (((uint16_t)touch->xh&0x0F)<<8) | touch->xl;
    	touch->y  = (((uint16_t)touch->yh&0x0F)<<8) | touch->yl;
+
+	if (touch->x == 0xFFF || touch->y == 0xFFF){
+		touch->idx = 0;
+		touch->tPoints = 0;
+		return 0;
+	}
    	touch->points[touch->idx].x = touch->x;
    	touch->points[touch->idx].y = touch->y;
 
    	return ++touch->idx;
 }
+#if 0
+static void (*callb)();
+static int interPin;
 
+void reattach ()
+{
+	attachInterrupt(interPin, callb, FALLING);
+}
+
+void dettach ()
+{
+	detachInterrupt(interPin);
+}
+#endif
 void touch_begin (const int intPin, void(*cb)())
 {
+	//interPin = intPin;
+	//callb = cb;
+	
 	pinMode(intPin, INPUT_PULLUP);
 	attachInterrupt(intPin, cb, FALLING);
 	FT5216_begin();
@@ -131,7 +156,7 @@ void touch_begin (const int intPin, void(*cb)())
 
 void touch_ISR ()
 {
-	touchInSignal++;
+	touchInSignal = 0xFF;
 }
 
 void touch_start (const int intPin)
@@ -141,6 +166,8 @@ void touch_start (const int intPin)
 
 int touch_process (touch_t *touch)
 {
+	if (!touchInSignal) return 0;
+
 	FT5216_start();
 	FT5216_write(FT5216_TOUCH_POINTS);
 	if (FT5216_end() != 0)
@@ -151,8 +178,8 @@ int touch_process (touch_t *touch)
 			if (!touch_read(touch)) break;
 		}
 	}
-
 	touchInSignal = 0;
+
 	return touch->tPoints;
 }
 

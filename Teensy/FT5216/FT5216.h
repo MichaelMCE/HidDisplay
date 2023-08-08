@@ -81,28 +81,13 @@
 #define FT5216_REG_CLB                    0XAA
 
 
-
-typedef struct _touch {
-	int idx;		// points to which multi point register we wish to read
-	int tPoints;	// number of points (fingers) measured on panel this scan
-	
-	uint16_t x;
-	uint16_t y;
-	
-	struct {
-		uint16_t x;
-		uint16_t y;
-	}points[10];
-
-	uint8_t xh;
-	uint8_t xl;
-	uint8_t yh;
-	uint8_t yl;
-}touch_t;
-
 void touch_start (const int intPin);
 int touch_isPressed ();
 int touch_process (touch_t *touch);
+
+
+void reattach ();
+void dettach ();
 
 #endif
 
