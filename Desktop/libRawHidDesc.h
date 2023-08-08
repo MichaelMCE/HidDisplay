@@ -33,17 +33,31 @@
 #define RAWHID_OP_FLAG_LAYERS		0x10	// layers enabled. Used with EXTMEM/PSRAM
 #define RAWHID_OP_FLAG_REPORTSON	0x20	// switch on touch control reports, if compiled in
 #define RAWHID_OP_FLAG_REPORTSOFF	0x40	// turn off touch control reports
+#define RAWHID_OP_FLAG_TOUCHDIR		0x80
 
 #define RAWHID_OP_TOUCH_INVALID		0x00
 #define RAWHID_OP_TOUCH_POINTS		0x01
-#define RAWHID_OP_TOUCH_RELEASE		0x02	// is a release msg when set
+#define RAWHID_OP_TOUCH_RELEASE		0x02	// is a release msg if set
+
+
+enum _touchdir {		// touch rotate direction
+	TOUCH_DIR_NONE = 1, // don't rotate
+	TOUCH_DIR_LRTB,		// left right top bottom
+	TOUCH_DIR_LRBT,		// left right bottom top		
+	TOUCH_DIR_RLTB,		// right left top bottom
+	TOUCH_DIR_RLBT,		// right left bottom top
+	TOUCH_DIR_TBLR,		// top bottom left right
+	TOUCH_DIR_BTLR,		// bottom top left right
+	TOUCH_DIR_TBRL,		// top bottom right left
+	TOUCH_DIR_BTRL		// bottom top right left
+};
 
 
 typedef struct _touch {
 	uint8_t idx;		// points to which multi point register we wish to read
 	uint8_t flags;		// RAWHID_OP_TOUCH_xxx
 	uint8_t tPoints;	// number of points (fingers) measured on panel this scan
-	uint8_t unused;
+	uint8_t direction;	// TOUCH_DIR_xx. touch rotation direction
 	
 	uint32_t time;
 	

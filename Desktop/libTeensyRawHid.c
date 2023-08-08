@@ -282,7 +282,7 @@ int libTeensyRawHid_ClearDisplay (teensyRawHidcxt_t *ctx, const uint16_t colour)
 	return (libTeensyRawHid_WriteData(ctx, buffer, sizeof(rawhid_header_t)) == sizeof(rawhid_header_t));
 }
 
-int libTeensyRawHid_TouchReportEnable (teensyRawHidcxt_t *ctx, const int state)
+int libTeensyRawHid_TouchReportEnable (teensyRawHidcxt_t *ctx, const int state, const int applyRotation)
 {
 	memset(ctx->buffer, 0, ctx->wMaxPacketSize);
 	rawhid_header_t *desc = (rawhid_header_t*)ctx->buffer;
@@ -292,6 +292,11 @@ int libTeensyRawHid_TouchReportEnable (teensyRawHidcxt_t *ctx, const int state)
 		desc->flags = RAWHID_OP_FLAG_REPORTSON;
 	else
 		desc->flags = RAWHID_OP_FLAG_REPORTSOFF;
+		
+	if (applyRotation){
+		desc->u.touch.direction = applyRotation;
+		desc->flags |= RAWHID_OP_FLAG_TOUCHDIR;
+	}
 	desc->crc = calcWriteCrc(desc);	
 	
 	if (libTeensyRawHid_WriteData(ctx, desc, sizeof(rawhid_header_t)) == sizeof(rawhid_header_t))
