@@ -26,17 +26,22 @@ USB Detail:
 #if USE_STARTUP_IMAGE
 #include "startup_256x142_16.h"
 #endif
+
 #if ENABLE_TOUCH_FT5216
 #include "FT5216/FT5216.h"
 
-static touch_t touch;
+typedef struct _touchCtx {
+	rawhid_header_t header;
+	touch_t touch;
+	int enabled;			// software toggle switch
+	int pressed;
+}touchCtx_t;
+static touchCtx_t touchCtx;
+
 #endif
 
 
-
-
-
-typedef struct _recvData{
+typedef struct _recvData {
 	uint8_t *readIn;
 	int inCt;
 }recvDataCtx_t;
@@ -46,6 +51,7 @@ typedef struct _recvData{
 static config_t config;
 static uint8_t *recvBuffer = NULL;
 static usb_rawhid_classex RawHid;
+
 
 
 static inline int usb_recv2 (void **buffer)
@@ -125,8 +131,12 @@ void setup ()
 {
 	Serial.begin(115200);
 	//while (!Serial);
-	//printf("RawHid\r\n");
-	printf(CFG_STRING "\r\n");
+	//printf("Name: " CFG_STRING "\r\n");
+#if ENABLE_DEVICE_SERIAL
+	//printf("Serial: " DEVICE_SERIAL_STR "\r\n");
+#endif
+	//printf("\r\n");
+	
 
 	// not needed here as is called from within teensy4/usb.c
 	//usb_rawhid_configure();
@@ -231,6 +241,18 @@ void opWriteTiles (rawhid_header_t *indesc)
 	
 	if (updateDisplay)
 		tft_update();
+}
+
+static void opSendDeviceSerial (rawhid_header_t *desc)
+{
+	memset(desc, 0, sizeof(*desc));
+	
+	desc->op = RAWHID_OP_SERIAL;
+	desc->u.serialid.u32 = DEVICE_SERIAL_NUM;
+	strncpy((char*)desc->u.serialid.str, DEVICE_SERIAL_STR, sizeof(desc->u.serialid.str));
+
+	desc->crc = calcWriteCrc(desc);
+	usb_send(desc, sizeof(*desc));
 }
 
 static void opSendDeviceCfg (rawhid_header_t *desc)
@@ -398,34 +420,61 @@ void opRecvImageArea (rawhid_header_t *header)
 		tft_update_area(x1, y1, x2, y2);
 }
 
-static void do_touch ()
-{
 #if ENABLE_TOUCH_FT5216
-
-	static int pressed = 0;
-
-	if (touch_isPressed()){
-		memset(&touch, 0, sizeof(touch));
-
-		if (touch_process(&touch)){
-			pressed = 1;
-			for (int i = 0; i < touch.tPoints; i++)
-				printf("Touch %i: %i %i\r\n", i+1, touch.points[i].x, touch.points[i].y);
-		}
-	}else if (pressed){
-		pressed = 0;
-		printf("Touch released\r\n");
-	}
-#endif
+static void opTouchCtrl (touchCtx_t *ctx, rawhid_header_t *header)
+{
+	if (header->flags&RAWHID_OP_FLAG_REPORTSON)
+		ctx->enabled = 1;
+	else if (header->flags&RAWHID_OP_FLAG_REPORTSOFF)
+		ctx->enabled = 0;
 }
 
+static void opSendTouch (touchCtx_t *ctx, touch_t *touch, const int isReleased)
+{
+	rawhid_header_t *desc = &ctx->header;
+	memset(desc, 0, sizeof(*desc));
+
+	desc->op = RAWHID_OP_TOUCH;
+	desc->u.touch = *touch;
+	desc->u.touch.time = millis();
+	
+	if (!isReleased)
+		desc->u.touch.flags = RAWHID_OP_TOUCH_POINTS;
+	else
+		desc->u.touch.flags = RAWHID_OP_TOUCH_RELEASE;
+	
+	desc->crc = calcWriteCrc(desc);
+	usb_send(desc, sizeof(*desc));
+}
+	
+static void do_touch (touchCtx_t *ctx, touch_t *touch)
+{
+	if (touch_isPressed()){
+		memset(touch, 0, sizeof(touch_t));
+		
+		if (touch_process(touch)){
+			ctx->pressed = 1;
+			//for (int i = 0; i < touch->tPoints; i++)
+			//	printf("Touch %i: %i %i\r\n", i+1, touch->points[i].x, touch->points[i].y);
+			if (ctx->enabled) opSendTouch(ctx, touch, 0);
+		}
+	}else if (ctx->pressed){
+		ctx->pressed = 0;
+		//printf("Touch released\r\n");
+		if (ctx->enabled) opSendTouch(ctx, touch, 1);
+	}
+}
+#endif
 
 void loop ()
 {
 	rawhid_header_t *desc = (rawhid_header_t*)recvBuffer;
+
 		
 	while (1){
-	  do_touch();
+#if ENABLE_TOUCH_FT5216
+	  do_touch(&touchCtx, &touchCtx.touch);
+#endif
 
 	  int bytesIn = usb_recv2((void**)&desc);
 	  if (bytesIn != PACKET_SIZE) return;
@@ -441,15 +490,23 @@ void loop ()
 
 	  }else if (op == RAWHID_OP_GFXOP){
 		  opGfx(desc);
-		
+
+	  }else if (op == RAWHID_OP_WRITETILE){
+		  opWriteTiles(desc);
+	
 	  }else if (op == RAWHID_OP_GETCFG){
 		  opSendDeviceCfg(desc);
 		
 	  }else if (op == RAWHID_OP_SETCFG){
 		  opSetWriteCfg(desc);
 
-	  }else if (op == RAWHID_OP_WRITETILE){
-		  opWriteTiles(desc);
+	  }else if (op == RAWHID_OP_SERIAL){
+		  opSendDeviceSerial(desc);
+		  
+	  }else if (op == RAWHID_OP_TOUCH){
+#if ENABLE_TOUCH_FT5216
+		  opTouchCtrl(&touchCtx, desc);
+#endif
 	  }
 	}
 }

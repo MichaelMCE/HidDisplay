@@ -9,16 +9,17 @@
 #define USE_STRIP_RENDERER		1		// enable/disables updates to display by STRIP_RENDERER_HEIGHT rows per iterations per frame
 #define STRIP_RENDERER_HEIGHT	32		// as above. Intended for use with the larger panels
 #define USE_STARTUP_IMAGE		1		// display a power on image at start up
-#define USE_BUFFER_LAYERS		1		// enable muliple backbuffer lateys. Is valid with USE_EXTMEM_BUFFER/PSRAM only. Can not use with USE_STRIP_RENDERER
+#define USE_BUFFER_LAYERS		0		// enable muliple backbuffer lateys. Is valid with USE_EXTMEM_BUFFER/PSRAM only. Can not use with USE_STRIP_RENDERER
 #define BUFFER_LAYERS_TOTAL		8		// make room for n backbuffer layers. Each layer size is = (WIDTH * HEIGHT * 2)
-#define ENABLE_TOUCH_FT5216		1
+#define ENABLE_TOUCH_FT5216		1		// WIP. enable i2c touch controller 
+#define ENABLE_DEVICE_SERIAL	1		// give display a uniquie serial number. set serial in device_serial.h
 
 
 // there can only be one
 #define USE_FLEXTFT_ILI9486		0
 #define USE_FLEXTFT_S6D04D1		0
-#define USE_FLEXTFT_ILI9806		0
-#define USE_FLEXTFT_RM68120		1
+#define USE_FLEXTFT_ILI9806		1
+#define USE_FLEXTFT_RM68120		0
 #define USE_FLEXTFT_R61529		0
 #define USE_FLEXTFT_LG4572B		0
 #define USE_FLEXTFT_NT35510		0
@@ -88,6 +89,11 @@
 #define STORAGETYPE EXTMEM 
 #else
 #define STORAGETYPE  
+#endif
+
+
+#if ENABLE_DEVICE_SERIAL
+#include "device_serial.h"
 #endif
 
 
