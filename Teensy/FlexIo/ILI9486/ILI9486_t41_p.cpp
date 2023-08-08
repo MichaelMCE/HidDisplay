@@ -66,8 +66,6 @@ FLASHMEM void ILI9486_t41_p::begin (uint8_t baud_div)
   setBacklight(TFT_INTENSITY);
   displayInit();
   
-  
-  
  setBitDepth(_bitDepth);
 
   setTearingEffect(_bTearingOn);
@@ -92,6 +90,8 @@ FLASHMEM void ILI9486_t41_p::begin (uint8_t baud_div)
 
   _width  = ILI9486_TFTWIDTH;
   _height = ILI9486_TFTHEIGHT;
+  
+  setRotation(3);
 
 }
 
@@ -258,21 +258,15 @@ FASTRUN void ILI9486_t41_p::setAddrWindow (uint16_t x1, uint16_t y1, uint16_t x2
 
 FASTRUN void ILI9486_t41_p::pushPixels16bit (const uint16_t *pcolors, uint16_t x1, uint16_t y1, uint16_t x2, uint16_t y2)
 {
-	
-
-	uint32_t area = ((x2-x1)+1) * ((y2-y1)+1);
-  
 	if (!((_lastx1 == x1) && (_lastx2 == x2) && (_lasty1 == y1) && (_lasty2 == y2))){
-		
-		while (WR_IRQTransferDone == false){
+		//while (WR_IRQTransferDone == false){
     	//Wait for any DMA transfers to complete
-		}
-  
-		
+		//}
 		setAddrWindow(x1, y1, x2, y2);
 		_lastx1 = x1; _lastx2 = x2; _lasty1 = y1; _lasty2 = y2;
 	}
   
+	uint32_t area = ((x2-x1)+1) * ((y2-y1)+1);
 	SglBeatWR_nPrm_16(ILI9486_RAMWR, pcolors, area);
 }
 
@@ -710,9 +704,9 @@ FASTRUN void ILI9486_t41_p::FlexIO_Config_MultiBeat ()
 
 FASTRUN void ILI9486_t41_p::SglBeatWR_nPrm_8 (uint32_t const cmd, const uint8_t *value = NULL, uint32_t const length = 0)
 {
-	while (WR_IRQTransferDone == false){
+	//while (WR_IRQTransferDone == false){
    	 //Wait for any DMA transfers to complete
-	}
+	//}
   
 
     FlexIO_Config_SnglBeat ();
@@ -730,9 +724,9 @@ FASTRUN void ILI9486_t41_p::SglBeatWR_nPrm_8 (uint32_t const cmd, const uint8_t 
     	
 	}
 
-    while(0 == (p->TIMSTAT & (1 << 0))){  
+    //while(0 == (p->TIMSTAT & (1 << 0))){  
     	
-	}
+	//}
 
     /* De-assert RS pin */
     
@@ -761,9 +755,9 @@ FASTRUN void ILI9486_t41_p::SglBeatWR_nPrm_8 (uint32_t const cmd, const uint8_t 
 
 FASTRUN void ILI9486_t41_p::SglBeatWR_nPrm_16 (uint32_t const cmd, const uint16_t *value, uint32_t const length)
 {
-	while (WR_IRQTransferDone == false){
+	//while (WR_IRQTransferDone == false){
     	//Wait for any DMA transfers to complete
-	}
+	//}
 	
     FlexIO_Config_SnglBeat();
 
@@ -774,11 +768,14 @@ FASTRUN void ILI9486_t41_p::SglBeatWR_nPrm_16 (uint32_t const cmd, const uint16_
     
     /* Write command index */
     p->SHIFTBUF[0] = cmd;
-
+	while (0 == (p->SHIFTSTAT & (1U << 0))){
+            	
+    }
+            
     /*Wait for transfer to be completed */
-    while (0 == (p->TIMSTAT & (1 << 0))){
+    //while (0 == (p->TIMSTAT & (1 << 0))){
     	
-	}
+	//}
 
     microSecondDelay();
     /* De-assert RS pin */
@@ -786,7 +783,7 @@ FASTRUN void ILI9486_t41_p::SglBeatWR_nPrm_16 (uint32_t const cmd, const uint16_
     microSecondDelay();
 
     if (length){
-		for(uint32_t i = 0; i < length-1U; i++){
+		for(uint32_t i = 0; i < length; i++){
 			uint16_t buf = *value++;
 		
 			while (0 == (p->SHIFTSTAT & (1U << 0))){
@@ -799,25 +796,7 @@ FASTRUN void ILI9486_t41_p::SglBeatWR_nPrm_16 (uint32_t const cmd, const uint16_
             }
             p->SHIFTBUF[0] = buf & 0xFF;
         }
-        
-        uint16_t buf = *value++;
-        /* Write the last byte */
-        while (0 == (p->SHIFTSTAT & (1U << 0))){
-        	
-		}
-        p->SHIFTBUF[0] = buf >> 8;
 
-        while (0 == (p->SHIFTSTAT & (1U << 0))){
-        	
-        }
-       // p->TIMSTAT |= (1U << 0);
-
-        p->SHIFTBUF[0] = buf & 0xFF;
-
-        /*Wait for transfer to be completed */
-   //     while (0 == (p->TIMSTAT |= (1U << 0))){
-   //     	
-   //     }
     }
     microSecondDelay();
     CSHigh();
