@@ -11,8 +11,7 @@
 #define USE_STARTUP_IMAGE		1		// display a power on image at start up
 #define USE_BUFFER_LAYERS		0		// enable muliple backbuffer lateys. Is valid with USE_EXTMEM_BUFFER/PSRAM only. Can not use with USE_STRIP_RENDERER
 #define BUFFER_LAYERS_TOTAL		8		// make room for n backbuffer layers. Each layer size is = (WIDTH * HEIGHT * 2)
-#define ENABLE_TOUCH_FT5216		1		// WIP. enable i2c touch controller 
-#define ENABLE_DEVICE_SERIAL	1		// give display a uniquie serial number. set serial in device_serial.h
+#define ENABLE_TOUCH_FT5216		1		// WIP. enable i2c touch controller and reports
 
 
 // there can only be one
@@ -41,7 +40,7 @@
 #define TFT_WIDTH				480
 #define TFT_HEIGHT				320
 #define CFG_STRING				"480x320*2 ILI9486 TFT Display"
-#define TFT_SPEED				20
+#define TFT_SPEED				40
 #elif USE_FLEXTFT_RM68120
 #define TFT_WIDTH				800
 #define TFT_HEIGHT				480
@@ -80,7 +79,11 @@
 #define TFT_INTENSITY			50		// PWM value from 0 to 255
 // Read is 37
 // Write is 36
-#define FT5216_INT				34		// FT5216 touch data ready interrupt pin
+
+#define FT5216_INT				34		// FT5216 data ready interrupt pin
+#define FT5216_ADDR				0x38	// i2c address
+#define FT5216_SPEED			1000000	// set speed in hz
+#define FT5216_obj				Wire2	// using i2c pins 24 & 25 on T4.1
 
 
 #if (USE_DMAMEM_BUFFER)
@@ -92,11 +95,7 @@
 #endif
 
 
-#if ENABLE_DEVICE_SERIAL
 #include "device_serial.h"
-#endif
-
-
 #include "displays.h"
 
 
