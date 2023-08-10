@@ -11,6 +11,7 @@
 
 
 
+
 int libTeensyRawHid_Init ()
 {
 	volatile static int initOnce = 0;		// init usb once only per process instance
@@ -100,7 +101,10 @@ int libTeensyRawHid_Open (teensyRawHidcxt_t *ctx, const uint32_t interface, uint
 
 		//usb_set_altinterface(ctx->usb_handle, 1);
 		//printf("libTeensyRawHid_Open: interface %i open\n", interface);
-
+#if USE_WRITE_ASYNC
+		usb_bulk_setup_async(ctx->usb_handle, &ctx->async.cxt, LIBUSB_ENDPOINT_WRITE);
+		ctx->async.state = 0;
+#endif
 		ctx->buffer = (uint8_t*)calloc(1, ctx->wMaxPacketSize);
 		return (ctx->buffer != NULL);
 	}
@@ -120,6 +124,10 @@ int libTeensyRawHid_Close (teensyRawHidcxt_t *ctx)
 {
 	if (ctx->usb_handle){
 		usb_release_interface(ctx->usb_handle, ctx->interface);
+		if (ctx->async.cxt){
+			usb_free_async(&ctx->async.cxt);
+			ctx->async.cxt = NULL;
+		}
 		usb_close(ctx->usb_handle);
 		ctx->usb_handle = NULL;
 		if (ctx->buffer){
@@ -138,12 +146,27 @@ int libTeensyRawHid_CloseDisplay (teensyRawHidcxt_t *ctx)
 
 static int libTeensyRawHid_WriteData (teensyRawHidcxt_t *ctx, void *data, const size_t size)
 {
+#if (!USE_WRITE_ASYNC)
 	return usb_bulk_write(ctx->usb_handle, LIBUSB_ENDPOINT_WRITE, (char*)data, size, 1000);
+#else
+	 if (ctx->async.state){		// wait for previous call to complete, else strange things happen
+	 	if (usb_reap_async(ctx->async.cxt, 1000) < 1){
+	 		ctx->async.state = 0;
+	 		return 0;
+	 	}
+	 }
+	 if (usb_submit_async(ctx->async.cxt, (char*)data, (int)size) < 0){
+	 	return 0;
+	 }else{
+	 	ctx->async.state = 1;
+	 	return size;
+	 }
+#endif
 }
 
 static int libTeensyRawHid_ReadData (teensyRawHidcxt_t *ctx, void *data, const size_t size)
 {
-	return usb_bulk_read(ctx->usb_handle, LIBUSB_ENDPOINT_READ, (char*)data, size, 1000);
+	return usb_bulk_read(ctx->usb_handle, LIBUSB_ENDPOINT_READ, (char*)data, size, 400);
 }
 
 static uint32_t calcWriteCrc (const rawhid_header_t *desc)

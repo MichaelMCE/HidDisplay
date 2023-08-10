@@ -7,6 +7,7 @@
 #include "lusb0_usb.h"
 #include "librawhiddesc.h"
 
+#define USE_WRITE_ASYNC			1
 
 #define RAWHID_VID				0x16C0
 #define RAWHID_PID				0x0486
@@ -57,6 +58,11 @@ typedef struct _TeensyRawHidcxt_t{
 	HANDLE hDev;
 	
 	uint8_t *buffer;
+	
+	struct {
+		void *cxt;
+		int state;
+	}async;
 }teensyRawHidcxt_t;
 
 
