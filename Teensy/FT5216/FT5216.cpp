@@ -10,16 +10,8 @@
 
 #include <Wire.h>
 #include "../librawhiddesc.h"
-#include "FT5216.h"
 #include "../config.h"
-
-#define FT5216_obj		Wire2	// using i2c pins 24 & 25 on T4.1
-#define FT5216_ADDR		0x38	// i2c address
-#define FT5216_INT		34		// using pin 33 for touch ready interrupt signal
-#define FT5216_SPEED	1000000	// set speed in hz
-
-
-
+#include "FT5216.h"
 
 static volatile int touchInSignal = 0;
 static const uint8_t FT5216_RegAddrLUT[10] = {0x03, 0x09, 0x0F, 0x15, 0x1B, 0x21, 0x27, 0x2D, 0x33, 0x39};
@@ -69,7 +61,7 @@ void FT5216_begin ()
     FT5216_writeReg(FT5216_REG_TIMEENTERMONITOR, 0x0A);
 
     // Period of 'Active' status (ms)
-    FT5216_writeReg(FT5216_REG_PERIODACTIVE, 0x06);
+    FT5216_writeReg(FT5216_REG_PERIODACTIVE, 12);
 
     // Timer to enter 'idle' when in 'Monitor' (ms)
     FT5216_writeReg(FT5216_REG_PERIODMONITOR, 0x28);
@@ -177,25 +169,9 @@ int touch_read (touch_t *touch)
 
    	return ++touch->idx;
 }
-#if 0
-static void (*callb)();
-static int interPin;
 
-void reattach ()
-{
-	attachInterrupt(interPin, callb, FALLING);
-}
-
-void dettach ()
-{
-	detachInterrupt(interPin);
-}
-#endif
 void touch_begin (const int intPin, void(*cb)())
 {
-	//interPin = intPin;
-	//callb = cb;
-	
 	pinMode(intPin, INPUT_PULLUP);
 	attachInterrupt(intPin, cb, FALLING);
 	FT5216_begin();
@@ -234,30 +210,3 @@ int touch_isPressed ()
 {
 	return touchInSignal;
 }
-
-#if 0
-void setup ()
-{
-	Serial.begin(115200);
-	while (!Serial);
-
-	printf("FT5216 Capacitive touchscreen (i2c)\r\n");
-	touch_begin(FT5216_INT, touch_ISR);
-}
-
-void loop ()
-{
-	if (touchInSignal){
-		touchInSignal = 0;
-
-		FT5216_start();
-		FT5216_write(FT5216_TOUCH_POINTS); // Set point to TD_STATUS 
-		if (FT5216_end() != 0)
-			printf("Wire2 write error\r\n");
-		
-		touch_t touch = {0};
-		touch_process(&touch);
-	}
-	//delay(8);
-}
-#endif

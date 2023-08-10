@@ -1,3 +1,4 @@
+#pragma once
 #ifndef _FT5216_H_
 #define _FT5216_H_
 
@@ -85,9 +86,6 @@ void touch_start (const int intPin);
 int touch_isPressed ();
 int touch_process (touch_t *touch);
 
-
-void reattach ();
-void dettach ();
 
 #endif
 
