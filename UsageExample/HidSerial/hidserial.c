@@ -32,9 +32,6 @@ int main (int argc, char *argv[])
 		printf("Device not found\n");
 
 	}else if (deviceInfo){
-		if (deviceInfo->interface_number == 0)
-			deviceInfo = deviceInfo->next;
-	
 		printf("Found:\nInterface: %i\nPath: %s\n", deviceInfo->interface_number, deviceInfo->path);
 		printf("Serial #: %ls\n\n", deviceInfo->serial_number);
 		
