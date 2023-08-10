@@ -25,6 +25,7 @@ typedef struct _rawhid_t{
 	int initialized;
 	
 	HANDLE hTouchThread;
+	uint32_t frameSize;
 }rawHidDisplay_t;
 
 static rawHidDisplay_t rawhid;
@@ -118,14 +119,14 @@ void teensyRawHid_Update_AsTiles (rawHidDisplay_t *rawhid, uint8_t *pixels, cons
 	free(mem_tile);
 }
 
-void teensyRawHid_Update (teensyRawHidcxt_t *ctx, uint8_t *pixels, const int width, const int height)
+int teensyRawHid_Update (teensyRawHidcxt_t *ctx, uint8_t *pixels, const int width, const int height)
 {
 	// in: pixels - 32bpp. alpha is unused
 	// out: ctx->frame - 16bpp
 	frame32ToBuffer16(pixels, ctx->frame, width, height, ctx->pitch);
 
 	// update as a single image
-	libTeensyRawHid_WriteImage(ctx, ctx->frame);
+	return libTeensyRawHid_WriteImage(ctx, ctx->frame);
 	
 	// update as two halves
 	//libTeensyRawHid_WriteArea(ctx, ctx->frame, 0, 0, ctx->width-1, (ctx->height>>1)-1);
@@ -143,22 +144,6 @@ void teensyRawHid_Update (teensyRawHidcxt_t *ctx, uint8_t *pixels, const int wid
 		uint8_t *pix = (uint8_t*)ctx->frame + ((i*stripHeight) * ctx->width * 2);
 		libTeensyRawHid_WriteArea(ctx, pix, 0, i*stripHeight, ctx->width-1, (i*stripHeight)+stripHeight-1);
 	}*/
-}
-
-CALLBACK void lcdmisc_update (LcdInfo *info, BitmapInfo *bmp)
-{
-	static int sendFirstTwice = 0;
-	
-	if (!rawhid.isShuttingdown && rawhid.initialized){
-		teensyRawHid_Update(&rawhid.ctx, bmp->bitmap, bmp->width, bmp->height);
-		
-		// first update is always corrupted. send again to fix
-		if (!sendFirstTwice){
-			sendFirstTwice = 0xFF;
-			teensyRawHid_Update(&rawhid.ctx, bmp->bitmap, bmp->width, bmp->height);
-			teensyRawHid_Update(&rawhid.ctx, bmp->bitmap, bmp->width, bmp->height);
-		}
-	}
 }
 
 CALLBACK void lcdmisc_destroy (LcdInfo *info)
@@ -257,6 +242,18 @@ void touch_init (rawHidDisplay_t *ctx)
 	touchStartListenerThread(ctx, HIGH_PRIORITY_CLASS);
 }
 
+void configTiles (rawHidDisplay_t *ctx)
+{
+	// using tile rendering is not necessary but an option, configure it anyway
+	setTilesWindow(&ctx->config, TILES_WIDTH, TILES_HEIGHT, ctx->ctx.width, ctx->ctx.height);
+	
+	rawhid_header_t desc;
+	memset(&desc, 0, sizeof(desc));
+	memcpy(&desc.u.config, &ctx->config, sizeof(ctx->config));
+
+	libTeensyRawHid_SetTileConfig(&rawhid.ctx, &desc);
+}
+
 int teensyRawHid_init ()
 {
 	if (!libTeensyRawHid_OpenDisplay(&rawhid.ctx)){
@@ -267,15 +264,12 @@ int teensyRawHid_init ()
 	rawhid_header_t desc;
 	if (libTeensyRawHid_GetConfig(&rawhid.ctx, &desc)){
 		setDisplayMetrics(&rawhid, desc.u.cfg.width, desc.u.cfg.height, desc.u.cfg.pitch, desc.u.cfg.rgbMax);
-		
-		// using tile rendering is not necessary but an option, but configure it anyway
-		setTilesWindow(&rawhid.config, TILES_WIDTH, TILES_HEIGHT, rawhid.ctx.width, rawhid.ctx.height);
-		memset(&desc, 0, sizeof(desc));
-		memcpy(&desc.u.config, &rawhid.config, sizeof(rawhid.config));
-		libTeensyRawHid_SetTileConfig(&rawhid.ctx, &desc);
+		configTiles(&rawhid);
 
-		if (!rawhid.ctx.frame)
-			rawhid.ctx.frame = calloc(rawhid.ctx.height, rawhid.ctx.pitch);
+		if (!rawhid.ctx.frame){
+			rawhid.frameSize = rawhid.ctx.height * rawhid.ctx.pitch;
+			rawhid.ctx.frame = calloc(1, rawhid.frameSize);
+		}
 			
 		touch_init(&rawhid);
 	}
@@ -283,22 +277,87 @@ int teensyRawHid_init ()
 	return (rawhid.ctx.frame != NULL);
 }
 
+int initDisplay ()
+{
+	rawhid.initialized = teensyRawHid_init();
+	return rawhid.initialized;
+}
+
+CALLBACK void lcdmisc_update (LcdInfo *info, BitmapInfo *bmp);
+
 void initWindow (LcdInfo *win)
 {	
-	memset(win, 0, sizeof(LcdInfo));
-	win->bpp = 32;
-	win->refreshRate = 30;		// doesn't do anything, but still
-	win->name = "hiddisplay";	// name must be const (bug in lcdmisc)
+	if (win->bpp != 32){
+		memset(win, 0, sizeof(LcdInfo));
+		win->bpp = 32;
+		win->refreshRate = 30;		// doesn't do anything, but still
+		win->name = "hiddisplay";	// name must be const (bug in lcdmisc)
+	}
+
 	win->width = rawhid.ctx.width;
 	win->height = rawhid.ctx.height;
 	win->Update = lcdmisc_update;
 	win->Destroy = lcdmisc_destroy;
 }
 
-int initDisplay ()
+CALLBACK void lcdmisc_update (LcdInfo *info, BitmapInfo *bmp)
 {
-	rawhid.initialized = teensyRawHid_init();
-	return rawhid.initialized;
+	static int sendFirstTwice = 0;
+
+	if (!rawhid.isShuttingdown && rawhid.initialized){
+		int success = 0;
+		if (rawhid.ctx.usb_handle)
+			success = teensyRawHid_Update(&rawhid.ctx, bmp->bitmap, bmp->width, bmp->height);
+
+		if (!success){
+			if (rawhid.ctx.usb_handle){
+				if (sendFirstTwice == 0xFF){
+					sendFirstTwice = 0;
+					usb_release_interface(rawhid.ctx.usb_handle, rawhid.ctx.interface);
+    				usb_reset(rawhid.ctx.usb_handle);
+    				Sleep(10);
+
+					rawhid.initialized = 0;
+					touchStopistenerThreadWait(&rawhid);
+				}
+			}
+		}
+	}
+	if (!rawhid.initialized){
+		int ret = libTeensyRawHid_Open(&rawhid.ctx, rawhid.ctx.interface, 0);
+		if (ret){
+			usb_resetep(rawhid.ctx.usb_handle, LIBUSB_ENDPOINT_READ);
+			usb_resetep(rawhid.ctx.usb_handle, LIBUSB_ENDPOINT_WRITE);
+			Sleep(10);
+					
+			rawhid_header_t desc;
+			int ret = libTeensyRawHid_GetConfig(&rawhid.ctx, &desc);
+			if (ret){
+				setDisplayMetrics(&rawhid, desc.u.cfg.width, desc.u.cfg.height, desc.u.cfg.pitch, desc.u.cfg.rgbMax);
+				configTiles(&rawhid);
+
+				if (rawhid.ctx.frame){
+					if (rawhid.frameSize < rawhid.ctx.height * rawhid.ctx.pitch){
+						rawhid.frameSize = rawhid.ctx.height * rawhid.ctx.pitch;
+						free(rawhid.ctx.frame);
+						rawhid.ctx.frame = calloc(1, rawhid.frameSize);
+					}
+				}
+					
+				initWindow(&rawhid.windows);
+				rawhid.initialized = 2;
+				touch_init(&rawhid);
+			}
+			sendFirstTwice = 0;
+		}
+	}
+
+	// first frame is always corrupted. send again to fix
+	if (!sendFirstTwice){
+		sendFirstTwice = 0xFF;
+		teensyRawHid_Update(&rawhid.ctx, bmp->bitmap, bmp->width, bmp->height);
+		teensyRawHid_Update(&rawhid.ctx, bmp->bitmap, bmp->width, bmp->height);
+	}
 }
 
 EXPORT CALLBACK int lcdInit (LcdCallbacks *LCDCallbacks)
@@ -362,6 +421,7 @@ EXPORT BOOL WINAPI DllMain (HINSTANCE hInstance, DWORD fdwReason, void *lpvReser
 }
 
 
+#if 0		// no longer required
 // functions razersb_xxxx are for backwards compatibility
 
 static int disop = 2;
@@ -388,4 +448,4 @@ EXPORT CALLBACK void razersb_ClearDisplayPad ()
 EXPORT CALLBACK void razersb_ClearDisplayKeys ()
 {
 }
-
+#endif
