@@ -23,32 +23,14 @@ USB Detail:
 #include "librawhiddesc.h"
 #include "hid/usb_hid.h"
 #include "hid/usb_hid.c"
+#include "Teensy.h"
 #if USE_STARTUP_IMAGE
 #include "startup_256x142_16.h"
 #endif
-
 #if ENABLE_TOUCH_FT5216
 #include "FT5216/FT5216.h"
-
-typedef struct _touchCtx {
-	rawhid_header_t header;
-	touch_t touch;
-	
-	uint8_t enabled;	// send reports. does not reflect current FT5216 comm state
-	uint8_t pressed;	// is being pressed
-	uint8_t rotate;		// touch rotation direction
-	uint8_t unused;
-}touchCtx_t;
 static touchCtx_t touchCtx;
-
 #endif
-
-
-typedef struct _recvData {
-	uint8_t *readIn;
-	int inCt;
-}recvDataCtx_t;
-
 
 
 static config_t config;
@@ -59,14 +41,14 @@ static usb_rawhid_classex RawHid;
 
 static inline int usb_recv2 (void **buffer)
 {
-	int ret = RawHid.recv2(buffer, 10);
+	int ret = RawHid.recv2(buffer, 9);
 	recvBuffer = (uint8_t*)*buffer;
 	return ret;
 }
 
 static inline int usb_recv (void *buffer)
 {
-	return RawHid.recv(buffer, 10);
+	return RawHid.recv(buffer, 9);
 }
 
 static inline int usb_send (void *buffer, const size_t size)
@@ -130,22 +112,24 @@ static void setStartupImage ()
 }
 #endif
 
+#if ENABLE_TOUCH_FT5216
 static void touch_init ()
 {
-	touchCtx.enabled = 0;
-	touchCtx.pressed = 0;
+	if (touchCtx.enabled == TOUCH_REPORTS_HALT)
+		touch_start(FT5216_INT);
+	
 	touchCtx.rotate = TOUCH_DIR_NONE;
-	touch_start(FT5216_INT);
+	touchCtx.pressed = 0;
+	touchCtx.t0 = 0;
 }
+#endif
 
 void setup ()
 {
 	//Serial.begin(115200);
 	//while (!Serial);
 	//printf("Name: " CFG_STRING "\r\n");
-#if ENABLE_DEVICE_SERIAL
 	//printf("Serial: " DEVICE_SERIAL_STR "\r\n");
-#endif
 	//printf("\r\n");
 	
 
@@ -159,10 +143,6 @@ void setup ()
 #if USE_STARTUP_IMAGE
 	setStartupImage();
 	setStartupImage();
-#endif
-
-#if ENABLE_TOUCH_FT5216
-	touch_init();
 #endif
 }
 
@@ -350,16 +330,11 @@ void opRecvImage (rawhid_header_t *header)
 		if (updateDisplay)
 			tft_update_area(0, (iter*trows), TFT_WIDTH-1, (iter*trows)+remaining-1);
 	}
-
-
-	//arm_dcache_flush(tft_getBuffer(), TFT_WIDTH * STRIP_RENDERER_HEIGHT * 2);
 }
 #else	
 void opRecvImage (rawhid_header_t *header)
 {
-	
 	//elapsedMillis timeMs = 0;
-	
 	const int updateDisplay = header->flags&RAWHID_OP_FLAG_UPDATE;
 	uint32_t len = 0;
 	
@@ -386,7 +361,6 @@ void opRecvImage (rawhid_header_t *header)
 	
 	//uint32_t t0 = timeMs;
 	//printf("time to recv %i\n", (int)t0);
-	
 	//timeMs = 0;
 	if (updateDisplay)
 		tft_update();
@@ -431,13 +405,16 @@ void opRecvImageArea (rawhid_header_t *header)
 		tft_update_area(x1, y1, x2, y2);
 }
 
+
 #if ENABLE_TOUCH_FT5216
 static void opTouchCtrl (touchCtx_t *ctx, rawhid_header_t *header)
 {
-	if (header->flags&RAWHID_OP_FLAG_REPORTSON)
-		ctx->enabled = 1;
-	else if (header->flags&RAWHID_OP_FLAG_REPORTSOFF)
-		ctx->enabled = 0;
+	if (header->flags&RAWHID_OP_FLAG_REPORTSON){
+		if (!ctx->enabled) touch_init();
+		ctx->enabled = TOUCH_REPORTS_ON;
+	}else if (header->flags&RAWHID_OP_FLAG_REPORTSOFF){
+		ctx->enabled = TOUCH_REPORTS_OFF;
+	}
 	
 	if (header->flags&RAWHID_OP_FLAG_TOUCHDIR)
 		ctx->rotate = header->u.touch.direction;
@@ -450,12 +427,14 @@ static void opSendTouch (touchCtx_t *ctx, touch_t *touch, const int isReleased)
 
 	desc->op = RAWHID_OP_TOUCH;
 	desc->u.touch = *touch;
-	desc->u.touch.time = millis();
+	desc->u.touch.time = ctx->t0;
 	
-	if (!isReleased)
+	if (!isReleased){
 		desc->u.touch.flags = RAWHID_OP_TOUCH_POINTS;
-	else
+	}else{
 		desc->u.touch.flags = RAWHID_OP_TOUCH_RELEASE;
+		ctx->t0 = 0;
+	}
 	
 	desc->crc = calcWriteCrc(desc);
 	usb_send(desc, sizeof(*desc));
@@ -463,6 +442,9 @@ static void opSendTouch (touchCtx_t *ctx, touch_t *touch, const int isReleased)
 	
 static void do_touch (touchCtx_t *ctx, touch_t *touch)
 {
+	if (ctx->enabled == TOUCH_REPORTS_HALT)
+		return;
+	
 	if (touch_isPressed()){
 		memset(touch, 0, sizeof(touch_t));
 		touch->direction = ctx->rotate;
@@ -471,12 +453,14 @@ static void do_touch (touchCtx_t *ctx, touch_t *touch)
 			ctx->pressed = 1;
 			//for (int i = 0; i < touch->tPoints; i++)
 			//	printf("Touch %i: %i %i\r\n", i+1, touch->points[i].x, touch->points[i].y);
-			if (ctx->enabled) opSendTouch(ctx, touch, 0);
+			if (ctx->enabled == TOUCH_REPORTS_ON)
+				opSendTouch(ctx, touch, 0);
 		}
 	}else if (ctx->pressed){
 		ctx->pressed = 0;
 		//printf("Touch released\r\n");
-		if (ctx->enabled) opSendTouch(ctx, touch, 1);
+		if (ctx->enabled == TOUCH_REPORTS_ON)
+			opSendTouch(ctx, touch, 1);
 	}
 }
 #endif
@@ -518,8 +502,8 @@ void loop ()
 	  }else if (op == RAWHID_OP_SERIAL){
 		  opSendDeviceSerial(desc);
 		  
-	  }else if (op == RAWHID_OP_TOUCH){
 #if ENABLE_TOUCH_FT5216
+	  }else if (op == RAWHID_OP_TOUCH){
 		  opTouchCtrl(&touchCtx, desc);
 #endif
 	  }
