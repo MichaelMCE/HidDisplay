@@ -6,27 +6,33 @@
 
 #define USE_DMAMEM_BUFFER		0		// set this to 1 to use DMAMEM for the tft buffer
 #define USE_EXTMEM_BUFFER		0		// set this to 1 to use PSRAM for the tft buffer
-#define USE_STRIP_RENDERER		1		// enable/disables updates to display by STRIP_RENDERER_HEIGHT rows per iterations per frame
+#define USE_STRIP_RENDERER		0		// enable/disables updates to display by STRIP_RENDERER_HEIGHT rows per iterations per frame
 #define STRIP_RENDERER_HEIGHT	32		// as above. Intended for use with the larger panels
 #define USE_STARTUP_IMAGE		1		// display a power on image at start up
 #define USE_BUFFER_LAYERS		0		// enable muliple backbuffer lateys. Is valid with USE_EXTMEM_BUFFER/PSRAM only. Can not use with USE_STRIP_RENDERER
 #define BUFFER_LAYERS_TOTAL		8		// make room for n backbuffer layers. Each layer size is = (WIDTH * HEIGHT * 2)
-#define ENABLE_TOUCH_FT5216		1		// WIP. enable i2c touch controller and reports
+#define ENABLE_TOUCH_FT5216		0		// WIP. enable i2c touch controller and reports
 
 
 // there can only be one
 #define USE_FLEXTFT_ILI9486		0
 #define USE_FLEXTFT_S6D04D1		0
-#define USE_FLEXTFT_ILI9806		1
+#define USE_FLEXTFT_ILI9806		0
 #define USE_FLEXTFT_RM68120		0
 #define USE_FLEXTFT_R61529		0
 #define USE_FLEXTFT_LG4572B		0
 #define USE_FLEXTFT_NT35510		0
 #define USE_FLEXTFT_NT35516		0
+#define USE_SPI_GC9A01A			1
 
 
 
-#if USE_FLEXTFT_S6D04D1
+#if USE_SPI_GC9A01A
+#define TFT_WIDTH				240
+#define TFT_HEIGHT				240
+#define CFG_STRING				"240x240*2 GC9A01A IPS Display"
+#define TFT_SPEED				100			// Mhz
+#elif USE_FLEXTFT_S6D04D1
 #define TFT_WIDTH				432
 #define TFT_HEIGHT				240
 #define CFG_STRING				"432x240*2 S6D04D1 IPS Display"
@@ -76,9 +82,16 @@
 #define TFT_RST					11		// Reset
 #define TFT_CS					12		// Chip select
 #define TFT_BL					33		// Backlight
-#define TFT_INTENSITY			50		// PWM value from 0 to 255
+#define TFT_INTENSITY			60		// PWM value from 0 to 255
 // Read is 37
 // Write is 36
+
+#define SPI_RST					8
+#define SPI_DC					9
+#define SPI_CS					10
+#define SPI_MOSI				11
+#define SPI_SCK					13
+
 
 #define FT5216_INT				34		// FT5216 data ready interrupt pin
 #define FT5216_ADDR				0x38	// i2c address

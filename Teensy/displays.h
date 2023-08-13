@@ -12,6 +12,7 @@
 #include "FlexIo/NT35510/NT35510_t41_p.h"
 #include "FlexIo/NT35516/NT35516_t41_p.h"
 #include "FlexIo/R61529/R61529_t41_p.h"
+#include "SPI/GC9A01A/GC9A01A_spi.h"
 
 
 
@@ -58,10 +59,7 @@ int tft_toggleLayer ();
 int tft_nextLayer ();
 
 
-void oled_init ();
-uint8_t *oled_getBuffer ();
-void oled_clear ();
-void oled_update ();
+
 
 
 #endif
