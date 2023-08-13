@@ -7,6 +7,8 @@ RM68120		800x480
 ILI9486		480x320
 R61529		480x320
 S6D04D1		432x240
+GC9A01A		240x240
+
 WIP:
 NT35510		800x480
 LG4572B		800x480
@@ -52,3 +54,30 @@ Capacitive touch using FT5Xxx series with i2c for communication:
 SCL	24
 SDA	25
 INT	34
+
+
+SPI displays:
+RST	8
+DC	9
+CS	10
+MOSI	11
+SCK	13
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
