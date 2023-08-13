@@ -104,10 +104,18 @@ static void setStartupImage ()
 	if (sizeof(frame256x142) > (TFT_WIDTH * TFT_HEIGHT * 2))
 		return;
 	
-	uint16_t x1 = (TFT_WIDTH - 256) / 2;
-	uint16_t y1 = (TFT_HEIGHT - 142) / 2;
-	uint16_t x2 = (TFT_WIDTH - x1) - 1;
-	uint16_t y2 = (TFT_HEIGHT - y1) - 1;
+	const int img_w = 256;
+	const int img_h = 142;
+	
+	int x1 = (TFT_WIDTH - img_w) / 2;
+	if (x1 < 0) x1 = 0;
+	int y1 = (TFT_HEIGHT - img_h) / 2;
+	if (y1 < 0) y1 = 0;
+
+	int x2 = (TFT_WIDTH - x1) - 1;
+	int y2 = (TFT_HEIGHT - y1) - 1;
+	if (x2 < img_w-1) x2 = img_w-1;
+
 	tft_update_array((uint16_t*)frame256x142, x1, y1, x2, y2);
 }
 #endif
@@ -126,12 +134,12 @@ static void touch_init ()
 
 void setup ()
 {
-	//Serial.begin(115200);
-	//while (!Serial);
-	//printf("Name: " CFG_STRING "\r\n");
-	//printf("Serial: " DEVICE_SERIAL_STR "\r\n");
-	//printf("\r\n");
-	
+/*	Serial.begin(115200);
+	while (!Serial);
+	printf("Name: " CFG_STRING "\r\n");
+	printf("Serial: " DEVICE_SERIAL_STR "\r\n");
+	printf("\r\n");
+*/	
 
 	// not needed here as is called from within teensy4/usb.c
 	//usb_rawhid_configure();
@@ -451,14 +459,14 @@ static void do_touch (touchCtx_t *ctx, touch_t *touch)
 		
 		if (touch_process(touch)){
 			ctx->pressed = 1;
-			//for (int i = 0; i < touch->tPoints; i++)
-			//	printf("Touch %i: %i %i\r\n", i+1, touch->points[i].x, touch->points[i].y);
+			for (int i = 0; i < touch->tPoints; i++)
+				printf("Touch %i: %i %i\r\n", i+1, touch->points[i].x, touch->points[i].y);
 			if (ctx->enabled == TOUCH_REPORTS_ON)
 				opSendTouch(ctx, touch, 0);
 		}
 	}else if (ctx->pressed){
 		ctx->pressed = 0;
-		//printf("Touch released\r\n");
+		printf("Touch released\r\n");
 		if (ctx->enabled == TOUCH_REPORTS_ON)
 			opSendTouch(ctx, touch, 1);
 	}
@@ -469,7 +477,6 @@ void loop ()
 {
 	rawhid_header_t *desc = (rawhid_header_t*)recvBuffer;
 
-		
 	while (1){
 #if ENABLE_TOUCH_FT5216
 	  do_touch(&touchCtx, &touchCtx.touch);
@@ -479,8 +486,6 @@ void loop ()
 	  if (bytesIn != PACKET_SIZE) return;
 
 	  const int op = decodeOp(desc);
-	  //printf("op: %i\n", (op));
-	
 	  if (op == RAWHID_OP_WRITEAREA){
 		  opRecvImageArea(desc);
 		
