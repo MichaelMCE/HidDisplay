@@ -308,7 +308,10 @@ CALLBACK void lcdmisc_update (LcdInfo *info, BitmapInfo *bmp)
 		int success = 0;
 		if (rawhid.ctx.usb_handle)
 			success = teensyRawHid_Update(&rawhid.ctx, bmp->bitmap, bmp->width, bmp->height);
-
+#if 1
+		(void)success;
+	}
+#else
 		if (!success){
 			if (rawhid.ctx.usb_handle){
 				if (sendFirstTwice == 0xFF){
@@ -351,6 +354,7 @@ CALLBACK void lcdmisc_update (LcdInfo *info, BitmapInfo *bmp)
 			sendFirstTwice = 0;
 		}
 	}
+#endif
 
 	// first frame is always corrupted. send again to fix
 	if (!sendFirstTwice){
