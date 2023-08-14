@@ -6,7 +6,7 @@
 
 #define USE_DMAMEM_BUFFER		0		// set this to 1 to use DMAMEM for the tft buffer
 #define USE_EXTMEM_BUFFER		0		// set this to 1 to use PSRAM for the tft buffer
-#define USE_STRIP_RENDERER		0		// enable/disables updates to display by STRIP_RENDERER_HEIGHT rows per iterations per frame
+#define USE_STRIP_RENDERER		1		// enable/disables updates to display by STRIP_RENDERER_HEIGHT rows per iterations per frame
 #define STRIP_RENDERER_HEIGHT	32		// as above. Intended for use with the larger panels
 #define USE_STARTUP_IMAGE		1		// display a power on image at start up
 #define USE_BUFFER_LAYERS		0		// enable muliple backbuffer lateys. Is valid with USE_EXTMEM_BUFFER/PSRAM only. Can not use with USE_STRIP_RENDERER
@@ -20,11 +20,12 @@
 #define USE_FLEXTFT_ILI9806		0
 #define USE_FLEXTFT_RM68120		0
 #define USE_FLEXTFT_R61529		0
+#define USE_FLEXTFT_R61408		1
 #define USE_FLEXTFT_LG4572B		0
 #define USE_FLEXTFT_NT35510		0
 #define USE_FLEXTFT_NT35516		0
 #define USE_SPI_GC9A01A			0
-#define USE_SPI_ST7735			1
+#define USE_SPI_ST7735			0
 
 
 #if USE_SPI_ST7735
@@ -46,7 +47,7 @@
 #define TFT_WIDTH				480
 #define TFT_HEIGHT				320
 #define CFG_STRING				"480x320*2 R61529 IPS Display"
-#define TFT_SPEED				22
+#define TFT_SPEED				10
 #elif USE_FLEXTFT_ILI9486
 #define TFT_WIDTH				480
 #define TFT_HEIGHT				320
@@ -57,6 +58,11 @@
 #define TFT_HEIGHT				480
 #define CFG_STRING				"800x480*2 RM68120 TFT Display"
 #define TFT_SPEED				40
+#elif USE_FLEXTFT_R61408
+#define TFT_WIDTH				800
+#define TFT_HEIGHT				480
+#define CFG_STRING				"800x480*2 R61408 IPS Display"
+#define TFT_SPEED				24
 #elif USE_FLEXTFT_LG4572B
 #define TFT_WIDTH				800
 #define TFT_HEIGHT				480

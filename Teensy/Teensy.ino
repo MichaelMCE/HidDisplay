@@ -100,10 +100,6 @@ static inline uint32_t decodeHeader (rawhid_header_t *header, uint16_t *x1, uint
 #if USE_STARTUP_IMAGE
 static void setStartupImage ()
 {
-	// sanity check
-	//if (sizeof(frame256x142) > (TFT_WIDTH * TFT_HEIGHT * 2))
-	//	return;
-	
 	const int img_w = 256;
 	const int img_h = 142;
 	
@@ -121,11 +117,12 @@ static void setStartupImage ()
 	if (y2 > TFT_HEIGHT-1) y2 = TFT_HEIGHT-1;
 
 	// send line by line to account for displays smaller than startup image
-	// not yet tested on larger display
-	for (int y = 0; y < TFT_HEIGHT; y++)
-		tft_update_array((uint16_t*)frame256x142[y], x1, y, x2, y);
-	
-	//tft_update_array((uint16_t*)frame256x142, x1, y1, x2, y2);
+	if (TFT_WIDTH <= img_w || TFT_HEIGHT <= img_h){
+		for (int y = 0; y < TFT_HEIGHT; y++)
+			tft_update_array((uint16_t*)frame256x142[y], x1, y, x2, y);
+	}else{
+		tft_update_array((uint16_t*)frame256x142, x1, y1, x2, y2);
+	}
 }
 #endif
 

@@ -12,6 +12,7 @@
 #include "FlexIo/NT35510/NT35510_t41_p.h"
 #include "FlexIo/NT35516/NT35516_t41_p.h"
 #include "FlexIo/R61529/R61529_t41_p.h"
+#include "FlexIo/R61408/R61408_t41_p.h"
 #include "SPI/GC9A01A/GC9A01A_spi.h"
 #include "SPI/ST7735/ST7735_spi.h"
 
