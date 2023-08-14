@@ -101,8 +101,8 @@ static inline uint32_t decodeHeader (rawhid_header_t *header, uint16_t *x1, uint
 static void setStartupImage ()
 {
 	// sanity check
-	if (sizeof(frame256x142) > (TFT_WIDTH * TFT_HEIGHT * 2))
-		return;
+	//if (sizeof(frame256x142) > (TFT_WIDTH * TFT_HEIGHT * 2))
+	//	return;
 	
 	const int img_w = 256;
 	const int img_h = 142;
@@ -115,8 +115,17 @@ static void setStartupImage ()
 	int x2 = (TFT_WIDTH - x1) - 1;
 	int y2 = (TFT_HEIGHT - y1) - 1;
 	if (x2 < img_w-1) x2 = img_w-1;
+	if (y2 < img_h-1) y2 = img_h-1;
 
-	tft_update_array((uint16_t*)frame256x142, x1, y1, x2, y2);
+	if (x2 > TFT_WIDTH-1) x2 = TFT_WIDTH-1;
+	if (y2 > TFT_HEIGHT-1) y2 = TFT_HEIGHT-1;
+
+	// send line by line to account for displays smaller than startup image
+	// not yet tested on larger display
+	for (int y = 0; y < TFT_HEIGHT; y++)
+		tft_update_array((uint16_t*)frame256x142[y], x1, y, x2, y);
+	
+	//tft_update_array((uint16_t*)frame256x142, x1, y1, x2, y2);
 }
 #endif
 
@@ -134,12 +143,12 @@ static void touch_init ()
 
 void setup ()
 {
-/*	Serial.begin(115200);
-	while (!Serial);
+	Serial.begin(115200);
+//	while (!Serial);
 	printf("Name: " CFG_STRING "\r\n");
 	printf("Serial: " DEVICE_SERIAL_STR "\r\n");
 	printf("\r\n");
-*/	
+	
 
 	// not needed here as is called from within teensy4/usb.c
 	//usb_rawhid_configure();

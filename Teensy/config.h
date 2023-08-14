@@ -23,11 +23,16 @@
 #define USE_FLEXTFT_LG4572B		0
 #define USE_FLEXTFT_NT35510		0
 #define USE_FLEXTFT_NT35516		0
-#define USE_SPI_GC9A01A			1
+#define USE_SPI_GC9A01A			0
+#define USE_SPI_ST7735			1
 
 
-
-#if USE_SPI_GC9A01A
+#if USE_SPI_ST7735
+#define TFT_WIDTH				160
+#define TFT_HEIGHT				128
+#define CFG_STRING				"160x128*2 ST7735 TFT Display"
+#define TFT_SPEED				56			// Mhz
+#elif USE_SPI_GC9A01A
 #define TFT_WIDTH				240
 #define TFT_HEIGHT				240
 #define CFG_STRING				"240x240*2 GC9A01A IPS Display"
