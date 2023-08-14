@@ -27,6 +27,9 @@ CS	12
 BL	33
 
 Non configurable:
+WR	36
+RD	37
+
 D0	19
 D1	18
 D2	14
@@ -45,17 +48,6 @@ D13	39
 D14	26
 D15	27
 
-WR	36
-RD	37
-
-
-Displays which support dual touch panels may share data lines with both i2c and SPI (PT2046) controllers. Usually only the SPI is labelled.
-
-Capacitive touch using FT5Xxx series with i2c for communication:
-SCL	24
-SDA	25
-INT	34
-
 
 SPI displays:
 RST	8
@@ -66,19 +58,23 @@ SCK	13
 BL	33
 
 
+Capacitive touch using FT5Xxx series with i2c for communication:
+SCL	24
+SDA	25
+INT	34
+
+Displays which support dual touch panels may share data lines with both i2c and SPI (PT2046) controllers.
+Usually only the SPI is labelled.
 
 
+         AP040IPS15DP    TK050F5590    AC3585    AC1590
+SDA:         SDA            T_CS        T_CS      MOSI      
+SCL:         SCK            SCK         SCL       SCK   
+INT:         INT            INT         INT       INT
 
 
-
-
-
-
-
-
-
-
-
+Display boards with selectable 8bit or 16bit interface (via resistors), select 16bit.
+As for voltage - Always select 3.3v, including for the backlight.
 
 
 
