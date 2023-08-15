@@ -238,7 +238,7 @@ void touchStopistenerThreadWait (rawHidDisplay_t *ctx)
 
 void touch_init (rawHidDisplay_t *ctx)
 {
-	libTeensyRawHid_TouchReportEnable(&ctx->ctx, 1, TOUCH_DIR_RLBT);
+	libTeensyRawHid_TouchReportEnable(&ctx->ctx, 1, TOUCH_DIR_DEFAULT);
 	touchStartListenerThread(ctx, HIGH_PRIORITY_CLASS);
 }
 
