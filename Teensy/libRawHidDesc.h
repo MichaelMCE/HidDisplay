@@ -1,4 +1,4 @@
-
+#pragma once
 #ifndef _LIBRAWHIDDESC_H
 #define _LIBRAWHIDDESC_H
 
@@ -42,6 +42,7 @@
 
 enum _touchdir {		// touch rotate direction
 	TOUCH_DIR_NONE = 1, // don't rotate
+	TOUCH_DIR_DEFAULT,	// use compiled in rotation
 	TOUCH_DIR_LRTB,		// left right top bottom
 	TOUCH_DIR_LRBT,		// left right bottom top		
 	TOUCH_DIR_RLTB,		// right left top bottom
@@ -49,9 +50,11 @@ enum _touchdir {		// touch rotate direction
 	TOUCH_DIR_TBLR,		// top bottom left right
 	TOUCH_DIR_BTLR,		// bottom top left right
 	TOUCH_DIR_TBRL,		// top bottom right left
-	TOUCH_DIR_BTRL		// bottom top right left
+	TOUCH_DIR_BTRL,		// bottom top right left
+	
+	TOUCH_DIR_SWAP_A_INVERT_V,	// swap axis then invert vertical axis
+	TOUCH_DIR_SWAP_A_INVERT_H,	// swap axis then invert horizontal axis
 };
-
 
 typedef struct _touch {
 	uint8_t idx;		// points to which multi point register we wish to read
@@ -78,7 +81,7 @@ typedef struct _touch {
 typedef struct {
 	struct {
 		struct {
-			uint8_t x1;			// configured write window, in tiles
+			uint8_t x1;		// configured write window, in tiles
 			uint8_t y1;
 			uint8_t x2;
 			uint8_t y2;
