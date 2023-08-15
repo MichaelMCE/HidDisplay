@@ -59,7 +59,7 @@ int display_init ()
 	return 1;
 }
 
-int main (int margc, char **cargv)
+int main (int argc, char **cargv)
 {
 
 	printf("\n");
@@ -69,8 +69,11 @@ int main (int margc, char **cargv)
 	}
 	
 	touch_t touch;
-	libTeensyRawHid_TouchReportEnable(&hid_ctx, 1, TOUCH_DIR_RLBT);
-
+	if (argc > 1)
+		libTeensyRawHid_TouchReportEnable(&hid_ctx, 1, atoi(cargv[1]));		// 1 through 11 (TOUCH_DIR_)
+	else
+		libTeensyRawHid_TouchReportEnable(&hid_ctx, 1, TOUCH_DIR_DEFAULT);
+	
 	printf("waiting\n");
 	while (!kbhit()){
 		if (libTeensyRawHid_GetReportWait(&hid_ctx, &touch)){
