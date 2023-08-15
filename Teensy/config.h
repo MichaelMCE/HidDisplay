@@ -11,7 +11,7 @@
 #define USE_STARTUP_IMAGE		1		// display a power on image at start up
 #define USE_BUFFER_LAYERS		0		// enable muliple backbuffer lateys. Is valid with USE_EXTMEM_BUFFER/PSRAM only. Can not use with USE_STRIP_RENDERER
 #define BUFFER_LAYERS_TOTAL		8		// make room for n backbuffer layers. Each layer size is = (WIDTH * HEIGHT * 2)
-#define ENABLE_TOUCH_FT5216		0		// WIP. enable i2c touch controller and reports
+#define ENABLE_TOUCH_FT5216		1		// WIP. enable i2c touch controller and reports
 
 
 // there can only be one
@@ -33,51 +33,61 @@
 #define TFT_HEIGHT				128
 #define CFG_STRING				"160x128*2 ST7735 TFT Display"
 #define TFT_SPEED				56			// Mhz
+#define TOUCH_ROTATION			TOUCH_DIR_NONE
 #elif USE_SPI_GC9A01A
 #define TFT_WIDTH				240
 #define TFT_HEIGHT				240
 #define CFG_STRING				"240x240*2 GC9A01A IPS Display"
 #define TFT_SPEED				100			// Mhz
+#define TOUCH_ROTATION			TOUCH_DIR_NONE
 #elif USE_FLEXTFT_S6D04D1
 #define TFT_WIDTH				432
 #define TFT_HEIGHT				240
 #define CFG_STRING				"432x240*2 S6D04D1 IPS Display"
 #define TFT_SPEED				20			// Mhz
+#define TOUCH_ROTATION			TOUCH_DIR_NONE
 #elif USE_FLEXTFT_R61529
 #define TFT_WIDTH				480
 #define TFT_HEIGHT				320
 #define CFG_STRING				"480x320*2 R61529 IPS Display"
-#define TFT_SPEED				10
+#define TFT_SPEED				20
+#define TOUCH_ROTATION			TOUCH_DIR_SWAP_A_INVERT_V
 #elif USE_FLEXTFT_ILI9486
 #define TFT_WIDTH				480
 #define TFT_HEIGHT				320
 #define CFG_STRING				"480x320*2 ILI9486 TFT Display"
 #define TFT_SPEED				40
+#define TOUCH_ROTATION			TOUCH_DIR_NONE
 #elif USE_FLEXTFT_RM68120
 #define TFT_WIDTH				800
 #define TFT_HEIGHT				480
 #define CFG_STRING				"800x480*2 RM68120 TFT Display"
 #define TFT_SPEED				40
+#define TOUCH_ROTATION			TOUCH_DIR_SWAP_A_INVERT_H
 #elif USE_FLEXTFT_R61408
 #define TFT_WIDTH				800
 #define TFT_HEIGHT				480
 #define CFG_STRING				"800x480*2 R61408 IPS Display"
 #define TFT_SPEED				24
+#define TOUCH_ROTATION			TOUCH_DIR_NONE
 #elif USE_FLEXTFT_LG4572B
 #define TFT_WIDTH				800
 #define TFT_HEIGHT				480
 #define CFG_STRING				"800x480*2 LG4572B IPS Display"
 #define TFT_SPEED				24
+#define TOUCH_ROTATION			TOUCH_DIR_NONE
 #elif USE_FLEXTFT_NT35510
 #define TFT_WIDTH				800
 #define TFT_HEIGHT				480
 #define CFG_STRING				"800x480*2 NT35510 IPS Display"
 #define TFT_SPEED				16
+#define TOUCH_ROTATION			TOUCH_DIR_NONE
 #elif USE_FLEXTFT_ILI9806
 #define TFT_WIDTH				854
 #define TFT_HEIGHT				480
 #define CFG_STRING				"854x480*2 ILI9806 IPS Display"
 #define TFT_SPEED				24
+#define TOUCH_ROTATION			TOUCH_DIR_RLBT
 #elif USE_FLEXTFT_NT35516
 #define TFT_WIDTH				960
 #define TFT_HEIGHT				540
@@ -85,6 +95,7 @@
 #define TFT_SPEED				22
 #define COL_CLAMP_MIN			0
 //#define COL_CLAMP_MAX			246
+#define TOUCH_ROTATION			TOUCH_DIR_NONE
 #endif
 
 
