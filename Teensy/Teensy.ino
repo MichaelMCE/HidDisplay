@@ -132,7 +132,7 @@ static void touch_init ()
 	if (touchCtx.enabled == TOUCH_REPORTS_HALT)
 		touch_start(FT5216_INT);
 	
-	touchCtx.rotate = TOUCH_DIR_NONE;
+	touchCtx.rotate = TOUCH_ROTATION;
 	touchCtx.pressed = 0;
 	touchCtx.t0 = 0;
 }
@@ -432,6 +432,8 @@ static void opTouchCtrl (touchCtx_t *ctx, rawhid_header_t *header)
 	
 	if (header->flags&RAWHID_OP_FLAG_TOUCHDIR)
 		ctx->rotate = header->u.touch.direction;
+		if (ctx->rotate == TOUCH_DIR_DEFAULT)
+			ctx->rotate = TOUCH_ROTATION;
 }
 
 static void opSendTouch (touchCtx_t *ctx, touch_t *touch, const int isReleased)
@@ -456,13 +458,15 @@ static void opSendTouch (touchCtx_t *ctx, touch_t *touch, const int isReleased)
 	
 static void do_touch (touchCtx_t *ctx, touch_t *touch)
 {
+	static int noTouchCt = 0;
+	
 	if (ctx->enabled == TOUCH_REPORTS_HALT)
 		return;
-	
+
 	if (touch_isPressed()){
 		memset(touch, 0, sizeof(touch_t));
 		touch->direction = ctx->rotate;
-		
+				
 		if (touch_process(touch)){
 			ctx->pressed = 1;
 			for (int i = 0; i < touch->tPoints; i++)
@@ -470,11 +474,14 @@ static void do_touch (touchCtx_t *ctx, touch_t *touch)
 			if (ctx->enabled == TOUCH_REPORTS_ON)
 				opSendTouch(ctx, touch, 0);
 		}
+		noTouchCt = 1;
 	}else if (ctx->pressed){
-		ctx->pressed = 0;
-		printf("Touch released\r\n");
-		if (ctx->enabled == TOUCH_REPORTS_ON)
-			opSendTouch(ctx, touch, 1);
+		if (++noTouchCt == 3){	// don't be so eagar to send a touch release, allow to check again to be sure
+			ctx->pressed = 0;
+			printf("Touch released\r\n");
+			if (ctx->enabled == TOUCH_REPORTS_ON)
+				opSendTouch(ctx, touch, 1);
+		}
 	}
 }
 #endif
