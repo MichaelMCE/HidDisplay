@@ -57,11 +57,29 @@ void FT5216_begin ()
 	
 	FT5216_writeReg(FT5216_DEVICE_MODE, 0);
 	
+    FT5216_writeReg(FT5216_REG_THGROUP, 0x16);
+
+    // valid touching peak detect threshold
+    FT5216_writeReg(FT5216_REG_THPEAK, 0x3C);
+
+    // Touch focus threshold
+    FT5216_writeReg(FT5216_REG_THCAL, 0xE9);
+
+    // threshold when there is surface water
+    FT5216_writeReg(FT5216_REG_THWATER, 0x01);
+
+    // threshold of temperature compensation
+    FT5216_writeReg(FT5216_REG_THTEMP, 0x01);
+
+    // Touch difference threshold
+    FT5216_writeReg(FT5216_REG_THDIFF, 0xA0);
+	
+	
 	// Delay to enter 'Monitor' status (s)
     FT5216_writeReg(FT5216_REG_TIMEENTERMONITOR, 0x0A);
 
     // Period of 'Active' status (ms)
-    FT5216_writeReg(FT5216_REG_PERIODACTIVE, 12);
+    FT5216_writeReg(FT5216_REG_PERIODACTIVE, 0x06);
 
     // Timer to enter 'idle' when in 'Monitor' (ms)
     FT5216_writeReg(FT5216_REG_PERIODMONITOR, 0x28);
@@ -111,6 +129,16 @@ static void FT5216_applyRotation (const int direction, uint16_t *x, uint16_t *y)
         *y = TFT_WIDTH-1  - _x;
         break;
 
+	case TOUCH_DIR_SWAP_A_INVERT_V:
+		*x = _y;
+		*y = TFT_HEIGHT-1 - _x;
+		 break;
+
+	case TOUCH_DIR_SWAP_A_INVERT_H:
+		*y = _x;
+		*x = TFT_WIDTH-1 - _y;
+		 break;
+		 
     default:
         break;
     }
@@ -179,7 +207,7 @@ void touch_begin (const int intPin, void(*cb)())
 
 void touch_ISR ()
 {
-	touchInSignal = 0xFF;
+	touchInSignal++;
 }
 
 void touch_start (const int intPin)
@@ -190,7 +218,7 @@ void touch_start (const int intPin)
 int touch_process (touch_t *touch)
 {
 	if (!touchInSignal) return 0;
-
+	
 	FT5216_start();
 	FT5216_write(FT5216_TOUCH_POINTS);
 	if (FT5216_end() != 0)
@@ -201,8 +229,8 @@ int touch_process (touch_t *touch)
 			if (!touch_read(touch)) break;
 		}
 	}
+	
 	touchInSignal = 0;
-
 	return touch->tPoints;
 }
 
