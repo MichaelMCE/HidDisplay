@@ -108,21 +108,14 @@ static void setStartupImage ()
 	int y1 = (TFT_HEIGHT - img_h) / 2;
 	if (y1 < 0) y1 = 0;
 
-	int x2 = (TFT_WIDTH - x1) - 1;
-	int y2 = (TFT_HEIGHT - y1) - 1;
-	if (x2 < img_w-1) x2 = img_w-1;
-	if (y2 < img_h-1) y2 = img_h-1;
-
+	int x2 = x1 + img_w-1;
 	if (x2 > TFT_WIDTH-1) x2 = TFT_WIDTH-1;
+	int y2 = y1 + img_h-1;
 	if (y2 > TFT_HEIGHT-1) y2 = TFT_HEIGHT-1;
+	
 
-	// send line by line to account for displays smaller than startup image
-	if (TFT_WIDTH <= img_w || TFT_HEIGHT <= img_h){
-		for (int y = 0; y < TFT_HEIGHT; y++)
-			tft_update_array((uint16_t*)frame256x142[y], x1, y, x2, y);
-	}else{
-		tft_update_array((uint16_t*)frame256x142, x1, y1, x2, y2);
-	}
+	for (int y = y1, row = 0; y <= y2; y++, row++)
+		tft_update_array((uint16_t*)frame256x142[row], x1, y, x2, y);
 }
 #endif
 
