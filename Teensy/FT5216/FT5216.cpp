@@ -9,7 +9,7 @@
 
 
 #include <Wire.h>
-#include "../librawhiddesc.h"
+#include "../libHidDisplayDesc.h"
 #include "../config.h"
 #include "FT5216.h"
 
