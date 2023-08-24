@@ -1,0 +1,7 @@
+; dlltool --base-file M:\Temp\cca07296.base --output-exp HidDisplay_64.exp --dllname HidDisplay_64.dll --output-def HidDisplay.def -k --add-stdcall-alias --exclude-symbol=DllMainCRTStartup --def M:\Temp\cca07296.def
+EXPORTS
+	Init @ 1
+	lcdEnum @ 2
+	lcdInit @ 3
+	lcdUninit @ 4
+	DllMain @ 5
