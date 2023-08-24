@@ -11,7 +11,7 @@
 #define USE_STARTUP_IMAGE		1		// display a power on image at start up
 #define USE_BUFFER_LAYERS		0		// enable muliple backbuffer lateys. Is valid with USE_EXTMEM_BUFFER/PSRAM only. Can not use with USE_STRIP_RENDERER
 #define BUFFER_LAYERS_TOTAL		8		// make room for n backbuffer layers. Each layer size is = (WIDTH * HEIGHT * 2)
-#define ENABLE_TOUCH_FT5216		1		// WIP. enable i2c touch controller and reports
+#define ENABLE_TOUCH_FT5216		1		// enable i2c touch controller and reports
 
 
 // there can only be one
@@ -27,14 +27,22 @@
 #define USE_SPI_GC9A01A			0
 #define USE_SPI_ST7735			0
 
+#define USE_SPI_GC9A01A2		0	//temp. to be removed
+
 
 #if USE_SPI_ST7735
 #define TFT_WIDTH				160
 #define TFT_HEIGHT				128
 #define CFG_STRING				"160x128*2 ST7735 TFT Display"
-#define TFT_SPEED				56			// Mhz
+#define TFT_SPEED				52			// Mhz
 #define TOUCH_ROTATION			TOUCH_DIR_NONE
 #elif USE_SPI_GC9A01A
+#define TFT_WIDTH				240
+#define TFT_HEIGHT				240
+#define CFG_STRING				"240x240*2 GC9A01A IPS Display"
+#define TFT_SPEED				100			// Mhz
+#define TOUCH_ROTATION			TOUCH_DIR_NONE
+#elif USE_SPI_GC9A01A2
 #define TFT_WIDTH				240
 #define TFT_HEIGHT				240
 #define CFG_STRING				"240x240*2 GC9A01A IPS Display"
@@ -74,8 +82,8 @@
 #define TFT_WIDTH				800
 #define TFT_HEIGHT				480
 #define CFG_STRING				"800x480*2 LG4572B IPS Display"
-#define TFT_SPEED				24
-#define TOUCH_ROTATION			TOUCH_DIR_NONE
+#define TFT_SPEED				22
+#define TOUCH_ROTATION			TOUCH_DIR_SWAP_A_INVERT_H
 #elif USE_FLEXTFT_NT35510
 #define TFT_WIDTH				800
 #define TFT_HEIGHT				480
@@ -104,7 +112,7 @@
 #define TFT_RST					11		// Reset
 #define TFT_CS					12		// Chip select
 #define TFT_BL					33		// Backlight
-#define TFT_INTENSITY			60		// PWM value from 0 to 255
+#define TFT_INTENSITY			70		// PWM value from 0 to 255
 // Read is 37
 // Write is 36
 
@@ -132,6 +140,7 @@
 
 #include "device_serial.h"
 #include "displays.h"
+#include "touch.h"
 
 
 #endif
