@@ -1,2 +1,0 @@
-Besure to have uploaded the Teensy .ino first before selecting and installing the driver.
-Use inf-wizard.exe to select the Teensy RawHid interface 0 device. Select "Install now". No need to save the driver.
