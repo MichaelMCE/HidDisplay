@@ -98,6 +98,10 @@ int libHidDisplay_SetTileConfig (teensyRawHidcxt_t *ctx, rawhid_header_t *desc);
 int libHidDisplay_GetDisplayTotal ();
 
 int libHidDisplay_TouchReportEnable (teensyRawHidcxt_t *ctx, const int state, const int applyRotation);
+
+// returns total number of points (fingers pressed)
+// returns 0 on error or timeout. timeout is @ 400ms
+// returns -1 on release (all fingers up)
 int libHidDisplay_GetReportWait (teensyRawHidcxt_t *ctx, touch_t *touch);
 
 

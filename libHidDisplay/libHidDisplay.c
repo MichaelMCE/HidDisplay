@@ -288,9 +288,19 @@ int libHidDisplay_GetReportWait (teensyRawHidcxt_t *ctx, touch_t *touch)
 	int ret = libHidDisplay_ReadData(ctx, ctx->buffer, ctx->wMaxPacketSize);
 	if (ret == (int)ctx->wMaxPacketSize){
 		rawhid_header_t *header = (rawhid_header_t*)ctx->buffer;
-		memcpy(touch, &header->u.touch, sizeof(*touch));
+		if (header->op == RAWHID_OP_TOUCH){
+			uint32_t crc = calcWriteCrc(header);
+			if (crc == header->crc){
+				memcpy(touch, &header->u.touch, sizeof(*touch));
+				//printf("libHidDisplay_GetReportWait: crc %X %X, %i\n", crc, header->crc, touch->tPoints);
+				if (touch->tPoints)
+					return touch->tPoints;
+				else
+					return -1;	// release
+			}
+		}
 	}
-	return (ret == (int)ctx->wMaxPacketSize);
+	return 0;
 }
 
 int libHidDisplay_ClearDisplay (teensyRawHidcxt_t *ctx, const uint16_t colour)
