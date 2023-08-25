@@ -9,9 +9,7 @@
 #include "ILI9806_t41_p.h"
 
 static ILI9806_t41_p STORAGETYPE lcd = ILI9806_t41_p(TFT_RS, TFT_CS, TFT_RST, TFT_BL);
-
-
-
+#include "../common.h"
 
 
 
@@ -349,7 +347,7 @@ FASTRUN void ILI9806_t41_p::FlexIO_Config_SnglBeat_Read()
     gpioWrite();
 
     p->CTRL &= ~FLEXIO_CTRL_FLEXEN;
-    p->CTRL |= FLEXIO_CTRL_SWRST;
+    p->CTRL |=  FLEXIO_CTRL_SWRST;
     p->CTRL &= ~FLEXIO_CTRL_SWRST;
 
     gpioRead();
@@ -402,17 +400,17 @@ FASTRUN void ILI9806_t41_p::FlexIO_Config_SnglBeat()
     gpioWrite();
 
     p->CTRL &= ~FLEXIO_CTRL_FLEXEN;
-    p->CTRL |= FLEXIO_CTRL_SWRST;
+    p->CTRL |=  FLEXIO_CTRL_SWRST;
     p->CTRL &= ~FLEXIO_CTRL_SWRST;
 
     
 
     /* Configure the shifters */
     p->SHIFTCFG[0] = 
-       FLEXIO_SHIFTCFG_INSRC*(1)                                               /* Shifter input */
-       |FLEXIO_SHIFTCFG_SSTOP(0)                                               /* Shifter stop bit disabled */
+         FLEXIO_SHIFTCFG_INSRC*(1)                                             /* Shifter input */
+       | FLEXIO_SHIFTCFG_SSTOP(0)                                              /* Shifter stop bit disabled */
        | FLEXIO_SHIFTCFG_SSTART(0)                                             /* Shifter start bit disabled and loading data on enabled */
-       | FLEXIO_SHIFTCFG_PWIDTH(15);                                            /* Bus width */
+       | FLEXIO_SHIFTCFG_PWIDTH(15);                                           /* Bus width */
      
     p->SHIFTCTL[0] = 
         FLEXIO_SHIFTCTL_TIMSEL(0)                                              /* Shifter's assigned timer index */
@@ -450,39 +448,37 @@ FASTRUN void ILI9806_t41_p::FlexIO_Config_SnglBeat()
 
 }
 
-FASTRUN void ILI9806_t41_p::FlexIO_Config_MultiBeat()
+FASTRUN void ILI9806_t41_p::FlexIO_Config_MultiBeat ()
 {
     //uint32_t i;
     uint8_t beats = SHIFTNUM * BEATS_PER_SHIFTER;                                     //Number of beats = number of shifters * beats per shifter
     /* Disable and reset FlexIO */
     p->CTRL &= ~FLEXIO_CTRL_FLEXEN;
-    p->CTRL |= FLEXIO_CTRL_SWRST;
+    p->CTRL |=  FLEXIO_CTRL_SWRST;
     p->CTRL &= ~FLEXIO_CTRL_SWRST;
 
     gpioWrite();
 
     /* Configure the shifters */
-    for (int i = 0; i <= SHIFTNUM - 1; i++)
-    {
+    for (int i = 0; i <= SHIFTNUM - 1; i++){
         p->SHIFTCFG[i] =
-            FLEXIO_SHIFTCFG_INSRC * (1U)                                              /* Shifter input from next shifter's output */
+             FLEXIO_SHIFTCFG_INSRC * (1U)                                             /* Shifter input from next shifter's output */
             | FLEXIO_SHIFTCFG_SSTOP(0U)                                               /* Shifter stop bit disabled */
             | FLEXIO_SHIFTCFG_SSTART(0U)                                              /* Shifter start bit disabled and loading data on enabled */
             | FLEXIO_SHIFTCFG_PWIDTH(BUS_WIDTH - 1);                                  /* 8 bit shift width */
     }
 
     p->SHIFTCTL[0] =
-        FLEXIO_SHIFTCTL_TIMSEL(0)                                                     /* Shifter's assigned timer index */
+          FLEXIO_SHIFTCTL_TIMSEL(0)                                                   /* Shifter's assigned timer index */
         | FLEXIO_SHIFTCTL_TIMPOL * (0U)                                               /* Shift on posedge of shift clock */
         | FLEXIO_SHIFTCTL_PINCFG(3U)                                                  /* Shifter's pin configured as output */
         | FLEXIO_SHIFTCTL_PINSEL(0)                                                   /* Shifter's pin start index */
         | FLEXIO_SHIFTCTL_PINPOL * (0U)                                               /* Shifter's pin active high */
         | FLEXIO_SHIFTCTL_SMOD(2U);                                                   /* shifter mode transmit */
 
-    for (int i = 1; i <= SHIFTNUM - 1; i++)
-    {
+    for (int i = 1; i <= SHIFTNUM - 1; i++){
         p->SHIFTCTL[i] =
-            FLEXIO_SHIFTCTL_TIMSEL(0)                                                 /* Shifter's assigned timer index */
+              FLEXIO_SHIFTCTL_TIMSEL(0)                                               /* Shifter's assigned timer index */
             | FLEXIO_SHIFTCTL_TIMPOL * (0U)                                           /* Shift on posedge of shift clock */
             | FLEXIO_SHIFTCTL_PINCFG(0U)                                              /* Shifter's pin configured as output disabled */
             | FLEXIO_SHIFTCTL_PINSEL(0)                                               /* Shifter's pin start index */
@@ -492,16 +488,16 @@ FASTRUN void ILI9806_t41_p::FlexIO_Config_MultiBeat()
 
     /* Configure the timer for shift clock */
     p->TIMCMP[0] =
-        ((beats * 2U - 1) << 8)                                                       /* TIMCMP[15:8] = number of beats x 2 – 1 */
-        | (_baud_div / 2U - 1U);                                                      /* TIMCMP[7:0] = shift clock divide ratio / 2 - 1 */
+          ((beats * 2U - 1) << 8)                                                    /* TIMCMP[15:8] = number of beats x 2 – 1 */
+        | (_baud_div / 2U - 1U);                                                     /* TIMCMP[7:0] = shift clock divide ratio / 2 - 1 */
 
-    p->TIMCFG[0] =   FLEXIO_TIMCFG_TIMOUT(0U)                                         /* Timer output logic one when enabled and not affected by reset */
-                     | FLEXIO_TIMCFG_TIMDEC(0U)                                       /* Timer decrement on FlexIO clock, shift clock equals timer output */
-                     | FLEXIO_TIMCFG_TIMRST(0U)                                       /* Timer never reset */
-                     | FLEXIO_TIMCFG_TIMDIS(2U)                                       /* Timer disabled on timer compare */
-                     | FLEXIO_TIMCFG_TIMENA(2U)                                       /* Timer enabled on trigger high */
-                     | FLEXIO_TIMCFG_TSTOP(0U)                                        /* Timer stop bit disabled */
-                     | FLEXIO_TIMCFG_TSTART * (0U);                                   /* Timer start bit disabled */
+    p->TIMCFG[0] = FLEXIO_TIMCFG_TIMOUT(0U)                                          /* Timer output logic one when enabled and not affected by reset */
+                 | FLEXIO_TIMCFG_TIMDEC(0U)                                          /* Timer decrement on FlexIO clock, shift clock equals timer output */
+                 | FLEXIO_TIMCFG_TIMRST(0U)                                          /* Timer never reset */
+                 | FLEXIO_TIMCFG_TIMDIS(2U)                                          /* Timer disabled on timer compare */
+                 | FLEXIO_TIMCFG_TIMENA(2U)                                          /* Timer enabled on trigger high */
+                 | FLEXIO_TIMCFG_TSTOP(0U)                                           /* Timer stop bit disabled */
+                 | FLEXIO_TIMCFG_TSTART * (0U);                                      /* Timer start bit disabled */
 
     p->TIMCTL[0] =
         FLEXIO_TIMCTL_TRGSEL(((SHIFTNUM - 1) << 2) | 1U)                              /* Timer trigger selected as highest shifter's status flag */
@@ -543,12 +539,11 @@ FASTRUN void ILI9806_t41_p::SglBeatWR_nPrm_8 (uint32_t const cmd, const uint8_t 
     p->SHIFTBUF[0] = cmd;
 
     /*Wait for transfer to be completed */
-    while(0 == (p->SHIFTSTAT & (1 << 0)))
-    {
+    while(0 == (p->SHIFTSTAT & (1 << 0))){
+	}
+
+    while(0 == (p->TIMSTAT & (1 << 0))){  
     }
-    while(0 == (p->TIMSTAT & (1 << 0)))
-            {  
-            }
 
     /* De-assert RS pin */
     

@@ -5,7 +5,7 @@
 #include "ILI9486_t41_p.h"
 
 static ILI9486_t41_p STORAGETYPE lcd = ILI9486_t41_p(TFT_RS, TFT_CS, TFT_RST);
-
+#include "../common.h"
 
 FLASHMEM ILI9486_t41_p::ILI9486_t41_p (int8_t dc, int8_t cs, int8_t rst, int8_t bl) 
 {

@@ -20,8 +20,7 @@
 
 
 static RM68120_t41_p STORAGETYPE lcd = RM68120_t41_p(TFT_RS, TFT_CS, TFT_RST, TFT_BL);
-
-
+#include "../common.h"
 
 
 FASTRUN void RM68120_t41_p::sendCmd16Arg8 (const uint16_t cmd, const uint8_t arg)

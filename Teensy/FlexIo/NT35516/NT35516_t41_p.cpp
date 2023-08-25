@@ -12,6 +12,7 @@
 #include "NT35516_t41_p.h"
 
 static NT35516_t41_p STORAGETYPE lcd = NT35516_t41_p(TFT_RS, TFT_CS, TFT_RST, TFT_BL);
+#include "../common.h"
 
 
 #define FIXUP_COLOUR_JITTER		0
@@ -510,11 +511,9 @@ FASTRUN void NT35516_t41_p::sglBeatWR_nPrm_16 (uint32_t const cmd, uint16_t *val
 
 		for (uint32_t i = 0; i < length; i++){
 			p->SHIFTBUF[0] = *value++;
-
 	  		while (0 == (p->SHIFTSTAT & (3 << 0))){
 			}
 		}
-
 	}
 
 	//delayNanoseconds(20);

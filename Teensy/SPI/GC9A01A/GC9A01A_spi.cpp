@@ -12,7 +12,7 @@
 #include "GC9A01A_SPI.h"
 
 static GC9A01A_SPI STORAGETYPE lcd = GC9A01A_SPI(SPI_CS, SPI_DC, SPI_RST, SPI_MOSI, SPI_SCK);
-
+#include "../common.h"
 
 
 
@@ -269,8 +269,8 @@ void GC9A01A_SPI::process_dma_interrupt(void) {
 // Constructor when using hardware ILI9241_KINETISK__pspi->  Faster, but must
 // use SPI pins
 // specific to each board type (e.g. 11,13 for Uno, 51,52 for Mega, etc.)
-GC9A01A_SPI::GC9A01A_SPI(uint8_t cs, uint8_t dc, uint8_t rst, uint8_t mosi,
-                         uint8_t sclk) {
+GC9A01A_SPI::GC9A01A_SPI(uint8_t cs, uint8_t dc, uint8_t rst, uint8_t mosi, uint8_t sclk)
+{
   _cs = cs;
   _dc = dc;
   _rst = rst;
@@ -579,8 +579,7 @@ void GC9A01A_SPI::initDMASettings(void) {
 // _dma_write_size_words);
 
 #endif
-  _dma_state =
-      GC9A01A_DMA_INIT | GC9A01A_DMA_EVER_INIT; // Should be first thing set!
+  _dma_state = GC9A01A_DMA_INIT | GC9A01A_DMA_EVER_INIT; // Should be first thing set!
   // Serial.println("DMA initDMASettings - end");
 }
 #endif
@@ -980,14 +979,12 @@ void GC9A01A_SPI::fillScreen (uint16_t color)
   if (_use_fbtft && _standard) {
     // Speed up lifted from Franks DMA code... _standard is if no offsets and
     // rects..
-    updateChangedRange(
-        0, 0, _width,
-        _height); // update the range of the screen that has been changed;
+    updateChangedRange(0, 0, _width, _height); // update the range of the screen that has been changed;
     uint32_t color32 = (color << 16) | color;
 
     uint32_t *pfbPixel = (uint32_t *)_pfbtft;
-    uint32_t *pfbtft_end = (uint32_t *)((
-        uint16_t *)&_pfbtft[(GC9A01A_TFTWIDTH * GC9A01A_TFTHEIGHT)]); // setup
+    uint32_t *pfbtft_end = (uint32_t *)((uint16_t *)&_pfbtft[(GC9A01A_TFTWIDTH * GC9A01A_TFTHEIGHT)]); // setup
+    
     while (pfbPixel < pfbtft_end) {
       *pfbPixel++ = color32;
       *pfbPixel++ = color32;

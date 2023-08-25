@@ -28,13 +28,10 @@ static uint8_t STORAGETYPE tft_buffer[layersTotal][CALC_PITCH_16(TFT_WIDTH)*TFT_
 
 
 /*
-
-
-lsyers_setActive
-lsyers_getActive
-lsyers_swap
-lsyers_next
-
+layers_setActive
+layers_getActive
+layers_swap
+layers_next
 */
 
 int tft_setWriteLayer (const int layerIdx)
@@ -71,7 +68,7 @@ int tft_toggleLayer ()
 void tft_init ()
 {
 #if USE_EXTMEM_BUFFER
-#if 1
+#if ENABLE_EXTRAM_CACHE
 	// enable PSRAM cache
 	FLEXSPI2_AHBCR = FLEXSPI_AHBCR_PREFETCHEN | FLEXSPI_AHBCR_BUFFERABLEEN;
 	FLEXSPI2_AHBRXBUF0CR0 = 0;	// disable BUF0/1/2, BUF3 will share entire buffer space between all AHB masters
@@ -85,17 +82,17 @@ void tft_init ()
 	CCM_CBCMR |=  (CCM_CBCMR_FLEXSPI2_PODF(3)   | CCM_CBCMR_FLEXSPI2_CLK_SEL(3));		// 133 MHz
 #endif
 
-	lcd.begin(TFT_SPEED);
+	display_begin(TFT_SPEED);
 }
 
 void tft_update ()
 {
-	lcd.pushPixels16bit((uint16_t*)tft_buffer[layersActive], 0, 0, TFT_WIDTH-1, TFT_HEIGHT_SPLIT-1);
+	display_update((uint16_t*)tft_buffer[layersActive], 0, 0, TFT_WIDTH-1, TFT_HEIGHT_SPLIT-1);
 }
 
 void tft_update_area (uint16_t x1, uint16_t y1, uint16_t x2, uint16_t y2)
 {
-	lcd.pushPixels16bit((uint16_t*)tft_buffer[layersActive], x1, y1, x2, y2);
+	display_update((uint16_t*)tft_buffer[layersActive], x1, y1, x2, y2);
 }
 
 static inline void tft_clearFrame (uint16_t *pixels, const uint16_t colour)
@@ -117,7 +114,7 @@ void tft_clear (const uint16_t colour)
 	tft_clearFrame(pixels, colour);
 
 	for (int y = 0; y < TFT_HEIGHT; y++)
-		lcd.pushPixels16bit(pixels, 0, y, TFT_WIDTH-1, y);
+		display_update(pixels, 0, y, TFT_WIDTH-1, y);
 }
 
 uint8_t *tft_getBuffer ()
@@ -127,17 +124,17 @@ uint8_t *tft_getBuffer ()
 
 void tft_rotate (const uint8_t rotation)
 {
-	lcd.setRotation(rotation);
+	display_setRotation(rotation);
 }
 
 void tft_update_array (uint16_t *pixels, uint16_t x1, uint16_t y1, uint16_t x2, uint16_t y2)
 {
-	lcd.pushPixels16bit(pixels, x1, y1, x2, y2);
+	display_update(pixels, x1, y1, x2, y2);
 }
 
 void tft_backlight (const uint8_t level)
 {
-	lcd.setBacklight(level);
+	display_setBacklight(level);
 }
 
 #endif

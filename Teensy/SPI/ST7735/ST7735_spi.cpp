@@ -10,7 +10,7 @@
 #include "ST7735_SPI.h"
 
 static ST7735_SPI STORAGETYPE lcd = ST7735_SPI(SPI_CS, SPI_DC, SPI_RST, SPI_MOSI, SPI_SCK);
-
+#include "../common.h"
 
 
 

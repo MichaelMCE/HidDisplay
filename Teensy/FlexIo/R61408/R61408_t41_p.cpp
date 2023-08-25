@@ -8,8 +8,8 @@
 
 #include "R61408_t41_p.h"
 
-
 static R61408_t41_p STORAGETYPE lcd = R61408_t41_p(TFT_RS, TFT_CS, TFT_RST, TFT_BL);
+#include "../common.h"
 
 
 FLASHMEM R61408_t41_p::R61408_t41_p (int8_t dc, int8_t cs, int8_t rst, int8_t bl) 
