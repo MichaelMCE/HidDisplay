@@ -34,7 +34,7 @@
 #include "usb_desc.h"
 
 #define PACKET_SIZE			(512)
-#define TRANSMIT_BUFFERS	(8)			// total buffer size = TRANSMIT_BUFFERS * PACKET_SIZE
+#define TRANSMIT_BUFFERS	(16)		// total buffer size = TRANSMIT_BUFFERS * PACKET_SIZE
 #define RECIEVE_BUFFERS		(511)		// total buffer size = RECIEVE_BUFFERS * PACKET_SIZE
 
 #ifndef RAWHID_TX_ENDPOINT
