@@ -12,6 +12,7 @@
 #define USE_BUFFER_LAYERS		0		// enable muliple backbuffer lateys. Is valid with USE_EXTMEM_BUFFER/PSRAM only. Can not use with USE_STRIP_RENDERER
 #define BUFFER_LAYERS_TOTAL		8		// make room for n backbuffer layers. Each layer size is = (WIDTH * HEIGHT * 2)
 #define ENABLE_TOUCH_FT5216		1		// enable i2c touch controller and reports
+#define ENABLE_EXTRAM_CACHE		0		// enable PSRAM cache. Is experimental.
 
 
 // there can only be one
