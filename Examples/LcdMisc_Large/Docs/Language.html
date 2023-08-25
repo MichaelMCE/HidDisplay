@@ -1,0 +1,341 @@
+<HTML>
+<HEAD>
+ <STYLE type="text/css">
+   .FXN {font-weight: bold; color: #0000C0;}
+ </STYLE>
+ <TITLE>LCD Miscellany Language Reference</TITLE>
+</HEAD>
+<BODY>
+<P> <H2>Scripting Language</H2>
+
+<P> A scripting language handles most everything the mod does.  The [Script] section of the ini file contains script files to load and the function(s) to run when the mod starts.  These script functions are responsible for drawing to the screen, obtaining information to display, handling all events, etc.  Without any functions set to run in response to various event, the mod will do absolutely nothing but sit around in memory.
+
+<P> The scripting language is somewhat similar to C.  It is case sensitive.  I am not going to give complete specifications, as teaching people who don't know how to program takes a lot of effort, which I'd rather spend on my mod.  If you know Java, C, or C++, the syntax is very similar.  If you don't, it's fairly easy to move stuff around, add stuff, and remove stuff using the sample code as a template.
+
+<P> The language isn't that complicated, but it can be difficult to debug.  I've never taken a course in language design and it shows.  The primary goal in writing the language was to create a language with which it's simple to write very robust code.  Checking for function failure, null pointers, etc. often isn't necessary, just call the functions again in a second or two and see if things work out then.
+
+<P>Whenever a script doesn't work, check the log.  It often has warnings and/or error messages that can help pinpoint the problem.  "Parse Error" means your syntax is invalid.  Missing operators, semicolons, and the like generally produce them, as well as incorrect control syntax, and bad syntax for certain intrinsic "functions" that are handled by the compiler, like size().  Also note that parse errors generally involve two adjacent symbols not liking each other. "+ +" or "goat goat" will both produce them.  The log will always point to the first character of the second symbol, which may be on a different line than the first, or may be the end of the file.
+
+<P> Script files themselves can be ASCII, UTF8, or UTF16 text files (With either UTF16 byte ordering).  UTF8 files need a BOM marker at the start.  UTF16 files do not, as long as the first character is low-ASCII, though UTF16 files with BOM markers also work fine.  If this means nothing to you, don't worry.  The default scripts are in standard ASCII, and you probably don't need UTF text files.
+
+<P> Doing illegal operations generally result in a value of null.  Adding a list to an integer will convert the list to null before adding, which acts like 0 when doing arithmetic, so the operation will return the original integer, for example.  This can make debugging painful, but makes it so the virtual machine won't crash, though it can still loop infinitely.
+
+<P><B>Note on expressions</B><BR>
+Note that I often use &lt;description> to indicate that description and the &lt;> delimiters should be replaced with a user-defined value.  When quotes appear around such an entry, the quotes are generally needed.  I don't bother with this syntax for function parameters or when I think it's obvious.
+
+<P>I use [] when parameters are optional, though it's also used for array/dict indexing.
+
+<P><B>Variables</B><BR>
+There are 3 scopes for variables:  Global, local, and class.  There are also global functions and class functions.  All variable scopes and function types have their own name space, so you could have a variable of each with the same name, though it's not recommended.  Variable names cannot start with a number and can only contain letters, numbers, underscores, and non-ascii characters.  Warnings are generated in the log when local/global/class variables share names to help in debugging typos.  If a local/class variable shares the name with a global, and the global is defined last, no warning is curently generated, however.
+
+<P>Variables are not explicitly typed.  Instead, they are converted between types as needed at run time.
+
+<P>Local variables are prefixed with a "$" and have scope throughout an entire function.  This is unlike C/C++/Java, so be careful of this when being lazy and taking advantage of the default null value behavior.  Global variables and function names have no prefix.  The compiler distinguishes between them by whether or not they're part of a function call (such as "name(args)").  Class variables and methods use a prefix of "%" and are discussed (far) below in more detail.
+
+<P>pi has a constant value of 3.14159265358979323846.  Using pi as anything other than a global variable (Function name, local variable, class variable) will return an error.
+
+<P> To create a global or local variable, simply use it in a line of code.  All variables are initialized to null, which acts like 0 or an empty string, depending on context.  In some cases it acts like an empty list or dictionary as well.  More information on variable value type below the Functions section.
+
+
+<P>
+<B>Functions</B>
+<P>
+
+Each script file is a list of functions.  All code must be inside a function.
+<P>
+
+The syntax for declaring a function is:
+<P>
+<SPAN class="FXN">function_name</SPAN> (argName1, argName2, ..., argNamen) {<BR>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;function body<BR>
+}
+<P>
+Every function returns a single value.  If no return value is specified, the function returns null.
+<P>
+The argument names can be prefixed by $ signs, but it's not necessary.  Function arguments are all local variables, and can only be accessed by using a $ prefix in the function body.
+<P> The local variable with no name, $, is a list of all arguments to a function.  This allows functions to take a variable number of arguments.  Modifying the list $ will not affect local variables.  Note:  when a function is called with no arguments, "$" may or may not be null instead of an empty list.
+<P>
+Unlike C/C++/Java, function prototypes are not needed (And are not supported).  Functions do not need to be declared before they are first called.
+
+<P> When calling a function, you can pass more/fewer parameters than are specified.  If fewer, the others are initialized to null.  This allows you to only specify the relevant arguments of a function, rather than specifying 5 dozen 0's.  It also allows new optional parameters to be added to both internal and scripted functions without breaking old code.  Parameters can also be left blank to have implicit values of null, like "fxn(,$SecondParameter)".
+
+<P>It is an error to try to create a new function with the name of an old one.
+
+<P>Functions that don't exist return null.  Warnings are generated if undeclared functions are called explicitely, but there's currently no warning if you call such functions using call(), SpawnThread(), or try to set one as an event handler, thoguh in the latter case null is returned to indicate an error.  More info on all of this later.
+
+<P>The syntax for calling functions is the same as in C/C++:
+
+<P><SPAN class="FXN">function_name</SPAN> (arg1, arg2, ..., argn)
+<P>If an argument has an @ before it, the argument is assumed to be a list and is unrolled into multiple arguments that are then added to the list of arguments in order of appearance.  Behavior when using this syntax with values that are not lists or null is undefined.  Also note that @ does *not* work this way with intrinsics, which include size(), call() and object.call().
+
+<P>Functions can also be called by 'call(functionName, argList)'. functionName must be the string representation of a function's name and argList must be a list containing all the values a function takes as arguments.  This allows you to decide which function to call at runtime.  It's mainly intended for use with objects and event handling, so functions can be named after events.  "call" is not a function, but rather a special op code.  As a result, things like 'call("call", ("list", list()))' will not work.
+
+
+<P> <B>Function aliasing</B>
+<P>
+If all a function needs to do is call another function, you can use the alias command instead of giving the function a body.  Aliased functions pass all their arguments to the function they alias.  The advantages of aliases are that they require less code, pass all their arguments, regardless of how many there are, and they are often optimized out, reducing overhead slightly.
+
+<P>They used have a couple uses, but as of version 0.4.0, aliases are not terribly useful.
+
+<P>The syntax for aliasing a function is:
+<P>
+alias function <SPAN class="FXN">&lt;alias name></SPAN> &lt;aliased function>;
+
+<P> Every time alias_function_name is called, it acts just like aliased_function.  All arguments will be passed and the return value will be the same.
+
+<P>Aliases for scripted functions are always optimized out.  Aliases for non-scripted functions are only optimized out if the alias is defined before the alias function first appears in the code (The reason for this is that there are different opcodes for calling scripted and non-scripted functions.  I may fix this behavior in a future version).
+
+<P> <B>dll Functions</B>
+<P> Functions can also map to functions in dlls.  For more information, see (far) below.
+
+<P>
+
+<B>Value Types</B><BR>
+There are 7 value types:  null, 64-bit integers, doubles, strings, lists, dictionaries, and objects.  Null, integers, doubles, and strings are immediates, though strings do use reference counting to minimize overhead.  Lists, dictionaries, and objects are treated as references, so if two values point to the same list or dictionary, and you modify one, the values of both will be modified.  Adding objects/lists/dictionaries as an element inside themselves works, but is a bad idea unless you really know what you're doing.  I use reference counting, so you can create memory leaks that way unless you zero out your self-referential pointers when done with them.
+
+<P> Note:  Information on expressions and order of operations appears after the sections on individual value types.
+
+<P><B>Null</B>
+<P> null is a special value type.  $null and null both resolve to null and cannot be reassigned.  null() does nothing and returns null.  Null can act like the integer 0, an empty string, an empty list, or an empty dictionary, depending on the situation.  When the virtual machine is confused, or a function has no meaningful value to return, null is often the result, rather than an error message.  This can make for painful debugging, but means the scripting engine will not crash (Other than bugs in the exe itself) or get mad, as long as code compiles.
+
+<P><B>Integers/doubles</B>
+
+<P> All the standard C math operators (including comparisons) convert their parameters to ints or doubles.  Strings are converted to ints or doubles, depending on the best match of their first characters ("3 goats" will become 3, " 15E3 fire breathing demons" will become 15000 (As a double), and "eating 5 monkeys" will become 0).  ++ and -- cannot be used in assignments (++x = whatever), but work otherwise work fine as pre and post-increment operators ("w = ++x;", "x += --y[x];", and "++ ++this.x;", "this.w[5]-- ++ --;", etc).
+
+<P>Note:  Funky things like "'' == list('Goat', 'Chicken')" will return 1.  Math operators are not intended for use with anything other than null, integers, doubles, and strings that contain numbers (integers or doubles).  If you need to compare objects, see Equals().
+
+<P>Operators that are applied to an int and a double convert the int to a double, except the operators that require integers (|, ^, &, >>, &lt;&lt;, ~).  Integer operations overflow rather than converting their values to doubles.  If you must have an int instead of a double, you can just use "(x|0)".
+
+<P> Lists/dicts are converted to 0 before being used in a math, boolean, or string expression.
+<P>
+<B>Strings</B><BR>
+<P>Strings are just arrays of bytes.  Most string functions, including comparisons, assume they are in UTF8.  Exceptions are noted in their descriptions.  Strings in script files are automatically converted to UTF8.  Keep in mind that elements of strings are bytes, not characters, and in UTF8, some characters are more than a single byte long.  If you need to specify the binary contents of a string exactly for some reason, the only way to do it currently is to create a UTF8 character string using escape sequences and then convert it to ASCII.
+<P>Strings must appear between single or double quotes.  Only strings that appear in double quotes are processed for escape codes, except for escaped single quotes.  Unlike C, however the escape character is '|'.  "|r", "|n", and "|t" work as the corresponding codes do in C (They're also case insensitive, just as in C).  "|###" inserts the character with code ### (Note that you can have 1-3 numbers).  Note that some characters take up more than one unicode byte.  A lot of functions ignore everything beyond a "|0", though string comparisons and append operations should not.  "|xHHHHHHHHHH" resolves to the Unicode character with the specified value, in hex.  You can use anywhere from 1 to 8 hex digits.  They are case insensitive.  All other codes just return the next character (So "|"" is also useful).
+<P>Internally, strings are just arrays of characters.  Strings can be in ASCII or UTF8 format.  Any string defined in quotes is converted to UTF8 format when compiling.  Most functions assume strings are of a certain type.  Unless otherwise specified, functions assume strings are in UTF8 format.  In future versions, I'll add functions to convert as needed, and Unicode string manipulation operations.
+<P>+s and +S to concatenate strings.  There is no difference between the two.
+<P> ==s, >= s, >s, etc are case insensitive string comparison operators.  Using a capital 'S' makes them case sensitive.  Currently, funky characters (vowels with accents and the like) are not handled properly (Treated as their base letter without the accent mark).
+<P>size(string) returns the size of a string.
+<P>[] can be used to extract single bytes of strings.  That is, Sting[2] would create a new string containing the third byte of String.  This is not terribly efficient, at the moment.  As strings cannot be modified, the code "String[2] = 'W'" will compile but will not work as expected.  The resulting value of such an expression will be null.
+<P>
+
+<B>Lists</B><BR>
+Lists are 0-based arrays that can contain values of all types, including other lists.<P>
+
+Lists of 2 or more elements can be created by using the syntax "(val1, val2, ..., valn)".  The parentheses are required to make a list.  Any value or values can be left out, and that position will be set to null.  0 and 1 length lists can be created with "list()" and "list(value)" (This syntax can also be used for longer lists).
+<P>
+
+When used in any position a list is not expected, the list is treated as null.
+
+<P>To access a value in a list, the syntax is list[index].  If index is not an integer, it will be converted to one.  If there is no such value, list[int] will return null.
+
+<P>
+"list1[i] = value" will assigned the value to the i position of list.  For this to work, list1 must already exist and must be a list (it doesn't work if list is null, as it's unclear if you want a dictionary or a list).  If i is less than 0 or greater than 100,000 it will do nothing.  Any entries below value that do not exist will be set to null.  Lists are references, so all copies of list are modified.
+
+<P> "list1[i][j][k]..." works as expected.
+
+
+<P>
+"list1 @ list2" creates a new list containing the elements of list1 and list2.  Modifying the new list will not affect the original lists, even if one of them is an empty list.  "list1 @ list()" will duplicate list1.  Note that all the values in list1 are copied exactly, so if list1 has some sublists, modifying values inside those lists in either the original or new lists will modify the value in both lists, unless you make a copy of those lists, too.
+
+<P>
+"@ list1" can be used when creating a new list to add all the elements of list1, in order, to the new list.  e.g. "(@list1, val1, @list2)" creates a list that's 1 longer than list1 and list 2 combined.  If list1 or list2 are not lists, I make no guarantees about what will be returned.  The value may not even be consistent, due to optimizations (list() is normally optimized out, but in some cases it is not.  It will behave differently on non-list values depending on which version you use).  This syntax can also be used when passing arguments to functions.  Note that "(@list1, @list2, @list3)" and "(list1 @ list2 @ list3)" are equivalent, though they may produce different opcodes.  Note:  These behave differently when calling functions.  The first is the same as calling the function with all the parameters in all the lists appended, while the latter will call the function with a single argument, which is the appended list.
+<P>
+"(@list1)" will duplicate a list just like "list1 @ list()", though the first uses one less op code.
+
+<P> The syntax to find the number of elements in a list is "size(list1)".
+
+<P> When used in a boolean expression (||, &&), lists are treated as 0 if they have no elements and 1 otherwise.  In all other math expressions, lists are treated as if they were 0.  I recommend not depending on the former behavior.  The latter is safe to rely on.
+
+<P> Although you can add a list to itself, this is not a good idea.  I use reference counting to decide when to free memory, so this can result in a memory leak.
+
+<P> List elements cannot currently be removed from a list.  This will be added in a future version.
+
+<P>
+
+<B>Dictionaries</B><BR>
+Dictionaries work quite similarly to lists, with the following exceptions:
+<P> They use strings as indices instead of integers.
+<P> To create a new dictionary, the syntax is "(key1:value1, key2:value2)", etc.  Note that "((key1:value1), (key2:value2))" will create a list of one-element dictionaries rather that the dictionaries themselves.  The syntax to create an empty dictionary is "dict()".  @ works just as with lists when creating dicts this way.
+<P> Using "@" between a pair of dictionaries will merge them, with values in the second dictionary overwriting those of the first.  As with lists, the result is a new dictionary; neither of the originals is modified.
+<P> The syntax to find the number of elements in a dictionary is "size(dict)".
+<P> There is currently no way to enumerate all the keys in a dictionary.
+<P> Using "@" to append lists and dictionaries does not work.  It will return null.  null can be appended to lists/dictionaries without problems, so "list1 @ dict1 @ list2" would return a new copy of list2.  You can get other weird behaviors, too.  Just don't do it.
+<P> Using the [] operator with ints, doubles, and strings will just return null.
+<P> "dictlist(dict1)" creates a list containing all the keys and values of dict1.  The even numbered entries of the list are keys, the following odd numbered elements are their associated values.  This is currently the only way to go through all the keys and/or values of a dictionary.
+<P> <B>Performance note:</B> Dicts are currently relatively slow.  Lookups and insertions both take O(n) time, where n is the number of elements in the dictionary.  Hash tables may be used in a future version.
+<P>
+<B>Objects</B><BR>
+<P>There are two types of objects:  Built-in type and script-defined types.  The syntax for defining an object is:
+<P>
+struct &gt;name&lt; [extends &lt;name&gt; [, &lt;name&gt;]*] {<BR>
+&nbsp; &nbsp;var &lt;class var1&gt;, &lt;class var1&gt;<BR>
+&nbsp; &nbsp;function &lt;name&gt;(&lt;arg1&gt;, ...) {<BR>
+&nbsp; &nbsp; &nbsp; &lt;function body&gt;<BR>
+&nbsp; &nbsp;}<BR>
+&nbsp; &nbsp;function &lt;function name&gt;(&lt;arg1&gt;, ...) {<BR>
+&nbsp; &nbsp; &nbsp; &lt;function body&gt;<BR>
+&nbsp; &nbsp;}<BR>
+};<BR>
+
+<P> "struct" is used instead of "class" because all the variables/functions are publicly accessible from everywhere (Except for built-in class types, which have private variables).  I may allow private/protected fields and functions in the future.
+
+<P> Multiple var lines are allowed and they can appear anywhere within the structure's body.  The function that shares the name of the structure is the constructor, and is called on object creation.  To create an object, just call the structure name as a function (&lt;name&gt;()).  Class variables and functions can be access by "%&lt;var/fxn name>" and "$this.&lt;var/fxn name>" from within a class's method.  The former is the preferred syntax and currently produces faster code (To be fixed later).  You can use aliases and dll functions (Mentioned further down) using the same syntax as elsewhere, but neither function type can access class variables using the aforementioned syntax.  Once you have created an object, you can access class variables and functions from other code using "&lt;object name>.&lt;var/fxn name>".
+
+<P>Accessing a variable that doesn't exist using %name notation produces an error, and accessing a class function that doesn't exist produces a warning at the end of the log file.
+
+<P> Class variable and function names can optionally be preceeded by % when they're declared ("var %v, v2;") and when they're accessed using "object.%var" notation.  This allows you to treat class variables as if the % is part of their name, if you so desire.
+
+<P> Inheritance is supported, but it may be significantly revised in the future.  Here's a summary of the rules:<BR>
+<PRE>1.  The parent class must encountered by the compiler before the inheriting class.  To be sure of this, have the file with the child class use the #import directive.  Note that circular #imports will not result in infinite loops, but can cause issues if they cause the child class's definition to be encountered first.
+2.  Each class can only have a single variable with a given name.  There is no need to declare a variable in a class if one of its parent classes defines the variable.  Variables with the same name are merged, and a warning is written to the output file.
+3.  A class can only have one function with a given name.  If a class declares a function with the same name as a function in one or more of its parents, the function of the parent is impossible to access from the child class.  If two parents have a function with the same name, unless it's the same function (Both parents share a parent which defines the function in question) or the class itself has a function of the same name, it's an error.
+4.  Constructors of parents are not automatically called.  You can call them as class functions (%parentClassName()) in the inheriting class's constructor, if you so desire.
+5.  You can not inherit from built-in classes.  Built-in classes have hard-coded value layouts that aren't compatible with my value placement code.  This may or may not be changed in the future.
+</PRE>
+
+<P> An alternative way to call one of an object's function is:
+
+<P>object.call("functionName", argList)
+
+<P>This works just like call() does (Mentioned at the end of the function section), except it calls methods implemented by the object.  This is intended primarily for event handling.  Functions can be named after events, so large if/else branches are not needed.  Functions are looked up using hash tables, so this isn't all that slow, though it is slower than object.functionName().
+
+<P> <B>Performance note:</B>  The compiler does not know what object type is being called, so for, e.g. "chicken.liver.fry()", the liver class variable and fry class function have to be looked up at runtime.  These lookups take O(log(n)) time, where n as the number of class variables or functions, depending on which you're searching through.
+
+<B>Order of operations</B><BR>
+The order has been copied pretty much directly from C.  (This listing is a modified version of the wiki entry).<P>
+
+() [] % (As prefix) . (When joining an object and a field)<BR>
+++ --<BR>
+! ~ - (As prefixes)<BR>
+* / %<BR>
++ -<BR>
++s +S<BR>
+&gt;&gt;&nbsp;&lt;&lt;<BR>
+&gt;s&nbsp;&gt;=s&nbsp;&lt;s&nbsp;&lt;=s ==s !=s &gt;S&nbsp;&gt;=S&nbsp;&lt;S&nbsp;&lt;=S ==S !=S<BR>
+&gt;&nbsp;&gt;=&nbsp;&lt;&nbsp;&lt;=<BR>
+== !=<BR>
+&<BR>
+^<BR>
+|<BR>
+&&<BR>
+||<BR>
+@<BR>
+= += -= *= /= %= &= ^= &gt;&gt;= &lt;&lt;= +=s +=S<BR>
+: @ (@ as a prefix)<BR>
+,<BR>
+<BR>
+Other than the assignment operators, all operators of an equal priority level are evaluated from left to right.
+<BR><BR><B>Statements</B><BR>
+There are two types of statements:  Simple expressions, and control statements.
+<P> Expression statements all must end with a semi-colon, like in C, C++, and Java.  Some samples are:
+<P> x = $y+= $[10];<BR>
+x[6] = w[3][3]-t;<BR>
+$time = GetTime();<BR>
+++ etc ++;
+
+<P> <B>Control Statements</B><BR>
+Control statements are identical to those in C/C++ or Java.  if, if/else, return, for, do/while, while, break, and continue are all implemented.  There are currently no switch statements.
+<P>Blocks of code (With { and }) work the same way with control statements as well (Though variables are scoped differently, as already mentioned).
+
+
+<P> <B>Preprocessor commands</B><BR>
+The "#requires" command allows you to specify files that are required for a script to work.  The indicated files will be compiled after the current file has been compiled, if they haven't been already.
+
+<P>The syntax is:
+<BR>#requires "file1.c"
+<BR>#requires file2.c
+<BR>#requires &lt;file3.c>
+<P>The first two lines will force the loading of "file1.c" and "file2.c" which must be in the same folder as the script which loads them (Relative paths can also be given).  The third line will load "&lt;LCDMisc Dir>\override\file3.c" if it exists, and "&lt;LCDMisc Dir>\include\file3.c".  Files are queued to be loaded and compiled when the directive is required.  "#import" behaves much like "#requires", except "#import" pauses the compilation of the current file and instantly compiles the other file.  For class inheritance, the parent class must be loaded before the child class, so you have have the child #import the parent.  Note that #import can make for messy compile logs.  Files will only be loaded once even if they're mentioned in multiple files, assuming their paths are identical.  Reasoning behind the names is that import means to import the file now.
+
+<P> By design, #requires and #import allow you to update by overwriting older files without losing your custom scripts. Just create a new directory for your custom scripts and then list them in your ini.  Also, if you stick LCDMisc.ini in override, it will be loaded instead of the standard ini (Which is located at "&lt;LCDMisc Dir>\LCDMisc.ini").  Note that &lt;file.c> can appear in the ini file as well as in #requires and #import statements.
+
+<P>#define works much like the C directive does, replacing all occurances of the defined term with the specified text. There are a number of differences, however:
+
+<P>1. A #defined value cannot take paramaters (As in "#define abs(x) ...".  "#define f function_name" works fine).
+<BR>2. The #defined value must be on a single line.
+<BR>3. There's a maximum recursion depth of 100 defined values.  This is primarily to prevent infinite loops.
+<BR>4. The scope of a #define is every script file that's processed after the #define line is encountered.  You should use #import to include files with required defines.
+
+<P>There may be a few other differences. I may make #define more powerful like it is in C in a future version, along with adding #ifdef/#else/#endif/#ifndef/#undef, and a few useful pre-defined values.
+
+<P><B>Performance notes</B><BR>
+Each opcode is 32-bits, other than those that involve pushing integers/doubles and function headers, all of which are 96-bits.  Each integer/double value on the stack or in memory is 128-bits (64-bit value and 8-bit type.  The rest is currently unused).  For strings, lists, and dicts that 128-bit value is a pointer to a memory location, and appending/adding to them often involves memory allocation/reallocation.
+<P>All name resolution is done at compile time (Which is why I have those annoying prefixes on local and class variables).  This means that no searching is done except with dictionaries and objects, which gives a nice speed boost.  The one exception to this is when creating timers; however, unlike dictionaries, function searches do use hash tables.
+<P> All that having been said, the current bottleneck is the performance counters and network bandwidth code.  Combined (They're in the same function), they take about 75% of the CPU time I use.  Getting free space for two drives, once a second, takes about over 10% of the time, with two drives.  Drawing takes about 5% of the time, most of which is spent in Logitech's code passing the image around.  Only about 1% of the time is spent running scripts (Ignoring the time spent in my C++ functions called by scripts).  The other time is spent in miscellaneous code (Looking up IPs, getting email count, parsing XML, compiling when the app first loads, etc).
+<P>As things are, it's obvious that there's not a lot I can do to speed things up, as most of the time is spent in Microsoft functions gathering data.  At the moment, time to execute the scripts isn't an issue.  I've spent some time optimizing it, but now that I've actually looked at the CPU usage breakdown, not sure I'll bother trying to speed it up any more, until/unless large scripts end up being normal.
+
+<P> <B>dll Functions</B>
+<P> Dll and dll function declarations must appear at the top level, rather than inside any functions.
+<P> To link to a dll, the syntax is:
+
+<P> dll32 alias "&lt;file name>" "&lt;initialization function>";
+
+<P> Replace dll32 with dll64 for 64-bit dlls.  The 32-bit version will only load 32-bit dlls and the 64-bit version will only load 64-bit dlls.  If a 32-bit and 64-bit dll share the same alias, the 32-bit version of the app will load the 32-bit dll and the 64-bit version will load the 64-bit dll.
+
+<P> An initialization function is optional, though dlls that expect LCD Miscellany to clean up memory they allocated and pass to it must use an initialization function.
+
+<P> Dll files must appear in the same directory as the script file that loads them.
+
+<P> File name is the name of the dll, as a quoted string.  Initialization function is the initialization function of the dll, also as a quoted string.  The C prototype of an initialization function is:
+
+<PRE>
+
+struct AppInfo {
+	int size;
+	unsigned char version[4];
+	int maxDllVersion;
+};
+
+struct DllInfo {
+	int size;
+	int dllVersion;
+	FreeProc free;
+};
+
+void CALLBACK InitDll (AppInfo *in, DllInfo *out);
+
+</PRE>
+AppInfo provides information to the dll.  size is the size of the structure, in bytes.  version is the version of the program (4th value is the revision number).  maxDllVersion is the highest version of the dllImplementation that the application supports (currently, only version 1 is defined).
+
+<P> DllInfo is created and by the application, not the dll.  All values are initialized to 0, except size, which is the size of the structure.  When the function is called, dlls must set dllVersion to the version of the dll specs they will be using.  If they don't support any version implemented by the app, they just leave it as 0, and loading the dll will fail.  free is the function to free memory dynamically allocated by the dll.  If the dll never passes such memory to the application, it's safe to leave it as null.
+
+<P> Initialization functions are called when the dll is loaded.  dlls are loaded into memory the first time a function inside them is called.  At the moment, there is no way to unload them.
+
+<P> To declare a function from a dll, the syntax is:
+
+<P> dll &lt;alias> function &lt;function name> "&lt;export name>";
+
+<P> or
+
+<P> dll &lt;alias> function &lt;function name> "&lt;export name>" (&lt;type> [arg name][,&lt;type> [arg name]]*);
+
+<P> or
+
+<P> &lt;alias> &lt;type> &lt;function name> "&lt;export name>" (&lt;type> [arg name][,&lt;type> [arg name]]*);
+
+<P> Note:  If no dll with the specified alias has been loaded yet (With the appropriate dll32/dll64) line, the function will fail to map to anything and compilation of that file will be canceled.  This means if a file uses only a 32-bit dll with no reference to a 64-bit alternative, the .c file will not work at all with the 64-bit version of the app.  This behavior may be changed later.  One way to avoid this behavior, if parts of the .c file don't require a dll, is to give a line for a dummy dll (Like 'dll64 &lt;name> "" "";').  This will cause an error to be logged on every attempted call to the dll, however.
+
+<P> Alias is the alias of a dll from a dll32/dll64 line.  Function name is the name of the function when called via a script, as a quoted string.  Export name is the exported name of the function, in quotes.
+
+<P> When declared using the first method, the list of arguments to the function will be directly translated to their C equivalent and passed to a the function.
+
+<P> You can force argument conversion by using the alternative syntax:
+
+<P> The second method will convert each argument to the desired script data types.  Types are:  int, double, string (for utf8 string or binary data), astring (for ASCII string.  Must contain no nulls except as the last character), wstring (for utf16 string.  Must contain no nulls except as the last character).  Currently you cannot specify lists or dicts (If you need anything that complicated, presumably you'll have to be checking value types anyways).  Objects should not be passed to dlls under any circumstances, in the current version.
+
+<P> The third method will pass all values as native C/C++ values using the standard CALLBACK (__stdcall) calling convention.  On 32-bit, all values are 32-bit types, on 64-bit, they are all 64-bit types.  You return a value as normal.  If you return a string, <B>it will not automatically be cleaned up<B>.  There is a hard-coded cap of 10 arguments allowed with this method.  You cannot return lists, dicts, or objects, only ints, "doubles" (Which are floats on 32-bit systems, doubles on 64), and the 3 string types.  Note that you can pass in binary data as UTF8 strings, but you cannot return binary data as a string, as return values are assumed to be null terminated strings, for memory allocation.  Returning a null when a string is expected is results in a null script value.  Note that because of how stdcall works, doubles can be returned by 32-bit dlls, but all other args/return values must be 32-bit values (32-bit pointers to strings are, of course, allowed).
+
+<P> For the first two methods, the C/C++ prototype for these functions must be:
+
+<P>void CALLBACK DllProc (ScriptVal *in, ScriptVal *out);
+
+<P>out must be set to the function's response.  It's already set to null by default, so if no value is returned, it can be left alone.  I'm not going to go into the specifics of my types, here.  See the header included in the sample dll.  Feel free to use any code in the dll you want.
+
+<P>
+To unload a dll, use the script function:<BR>
+<SPAN class="FXN">UnloadDll</SPAN> ("alias")<BR>
+The specified dll will be unloaded from memory.  Alias must be an alias as specified by a dll32 or dll64 line.  When a procedure that needs it is called, it will automatically be reloaded and the initialization function called.  If no such dll alias exists, it returns -1.  It returns 0 if the dll wasn't loaded when the function was called and 1 if it was loaded.
+
+
+</BODY>
+</HTML>

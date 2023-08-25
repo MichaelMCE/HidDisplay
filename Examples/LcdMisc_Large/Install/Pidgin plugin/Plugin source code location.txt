@@ -1,0 +1,3 @@
+WebPidgin was written by ThirdMartini, plugin source can be downloaded at:  http://www.thirdmartini.com/index.php/WebPidgin
+
+Believe this is all I need to provide under GPL obligations.

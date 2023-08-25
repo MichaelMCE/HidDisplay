@@ -1,0 +1,973 @@
+<HTML>
+<HEAD>
+ <STYLE type="text/css">
+   .FXN {font-weight: bold; color: #0000C0;}
+   .CLASS {font-weight: bold; color: #00C000;}
+   .CLASS_VAR {font-weight: bold; color: #C00000;}
+
+div {
+  border-width: 1px;
+  border-color: #0000FF;
+  border-style: solid;
+  background-color: #EEEEFF;
+  padding: 10px;
+}
+  </STYLE>
+ <TITLE>LCD Miscellany Function Reference</TITLE>
+</HEAD>
+<BODY>
+
+<H2>Function Reference</H2>
+A couple notes on my functions:  I'm often fairly careless on dealing with the fact that most of my functions internally only use 32-bits of data, while my virtual machine's integers contain 64-bits of data.  Passing insanely large numbers to drawing functions, as process ids, etc, makes no sense, and shouldn't happen, in general.  In many cases, the upper 32-bits will be completely ignored, even though the proper behavior would be to fail when the high order 33 bits are not all the same.  Also, functions where return value is not mention generally return null.  Both of these behaviors may be changed in future versions, so do not count on them.
+
+<P>
+<div>
+<B>Basic Functions</B><BR>
+Note:  These are all functions that are essentially perform low level language tasks.
+<P> <SPAN class="FXN">list</SPAN> (...)<BR>
+Returns a list containing its parameters.  Simplest way to create 0- and 1-element lists.
+<!--<P> <SPAN class="FXN">null</SPAN> ()<BR>
+Does nothing and returns null.  Default function called when a function doesn't exist.
+-->
+<P>
+<SPAN class="FXN">IsNull</SPAN> (...)<BR>
+<SPAN class="FXN">IsString</SPAN> (...)<BR>
+<SPAN class="FXN">IsInt</SPAN> (...)<BR>
+<SPAN class="FXN">IsFloat</SPAN> (...)<BR>
+<SPAN class="FXN">IsList</SPAN> (...)<BR>
+<SPAN class="FXN">IsDict</SPAN> (...)<BR>
+<SPAN class="FXN">IsObject</SPAN> (...)<BR>
+<SPAN class="FXN">IsNumber</SPAN> (...)<BR>
+<SPAN class="FXN">IsSimple</SPAN> (...)<BR>
+<SPAN class="FXN">IsCompound</SPAN> (...)<BR>
+Return 1 if all values are of the specified type; otherwise, return 0.  Return 1 when given no arguments.  Only IsNull and IsSimple return 1 on nulls.  IsNull() will, of course, only return 1 when only passed nulls.  IsNumber() will return 1 when passed integers, doubles, or null.  IsSimple() will return 1 on everything (including null) except lists, dicts, and objects.  IsCompound returns 1 only on dictionaries, lists, and objects.
+<P> <SPAN class="FXN">type</SPAN> (value)<BR>
+Returns the type of a value, as a string.  Possible values are "null", "int", "float", "string", "list", "dict", and the names of object types, both built-in and user-defined.</P>
+<P> <SPAN class="FXN">UnloadDll</SPAN> (dll)<BR>
+Unloads a dll.  On reload, initialization function will be called again.  Note that windows doesn't always promptly unload dlls, so the dll may get two initialization calls without being unloaded in between.
+</P> <SPAN class="FXN">Equals</SPAN> (v1, v2)<BR>
+Checks if v1 "equals" v2.  This is an object equality function.  If given two lists, dictionaries, or objects, it checks if they're both the exact same object.  That is, if they are both pointers to the same object.  Returns 1 if they're the same object, returns 0 otherwise.  Two different empty lists will return 0, but two pointers to the same empty list will return 1.  Comparing objects of those 3 types to objects of different types returns false.
+
+<P>Comparing two strings will perform a case-sensitive string comparison, just like ==S.  Comparing a string with anything else will return 0, with the sole exception of comparing a 0-length string to null, which returns 1.  Given two numbers (ints, doubles, or nulls), possibly of different types, it performs just like ==.  Note: Currently Equals(null, "") and Equals(null, 0) both return 1, but Equals(0, "") returns 0.
+</div>
+<P>
+<div>
+<B>Debug Functions</B><BR>
+<P> <SPAN class="FXN">StackCount</SPAN> ()<BR>
+Returns the number of active virtual machine stacks, including the current one.  This value is 1 + number of stacks that are in a wait state.  Mainly intended to detect "Wait leaks".  An error message is logged if you reach 100 stacks as well.
+<P>
+<SPAN class="FXN">WriteLog</SPAN> (string, window)<BR>
+<SPAN class="FXN">WriteLogLn</SPAN> (string, window)<BR>
+Writes the specified string to the log file.  WriteLogLn() writes a line break as well.  Note that these functions both only write strings (Though they work with integers and doubles, of course).  They are not meant to output strings that actually contain binary or UTF16 data.  They currently won't output anything useful for nulls, lists, objects, or dictionaries.  For those, you can use "WriteLogLn(type(string));" to get the object's type.
+
+</P>If window is 1, a text window will pop up (If there isn't one already), and the line will be displayed in it (in addition to in the log).  If it's 2, a window will only pop up if ScriptDebug's second bit is 1.  5 and 6 behave like 1 and 2, respectively, except neither one will write to the log file.
+
+</div>
+<P>
+<div>
+<B>Multiple Type Functions</B><BR>
+<P><SPAN class="FXN">size</SPAN> (arg)<BR>
+size is actually an op code, not a function. It returns the length in bytes (*Not* UTF-8 characters) of a string, elements in a list, or key/value pairs in a dictionary.  It returns 0 on null.  Returns 1 on ints and floats (subject to change, but will always be non-zero).
+
+<P><SPAN class="FXN">erase</SPAN> (arg)<BR>
+Erases all the elements of the specified list or dict list, leaving an empty list or dict.  On success, returns the freshly cleared object.  On fail, returns null.  If passed multiple arguments, clears them all, but only returns the result of trying to clear the first argument.
+</div>
+<P>
+<div>
+<B>List Functions</B><BR>
+Note:  For all of the functions below, list must be an actual list, otherwise they do nothing and return null.  Unless otherwise noted, the functions modify an existing list in addition to returning the new value of the modified list, as opposed to creating a modified copy of the original list.
+
+<P> <SPAN class="FXN">resize</SPAN> (list, length)<BR>
+Resizes the specified list to a specified length.  If extended, new values are initialized to null.  If shortened, old elements are removed.  On success, modified list is returned.
+<P> <SPAN class="FXN">realloc</SPAN> (list, size)<BR>
+Resizes the internal length of list to hold at least size objects.  If the list has more elements than size, elements will not be removed, but size will be set to the number of elements of the list.  This is the only way to reduce memory taken by an allocated list.  That is, resize, erase, and pop remove elements of a list, but don't free any memory.  All memory used by a list is freed when it is no longer in any scope, of course.
+<P> <SPAN class="FXN">push_back</SPAN> (list, val1, val2, ...)<BR>
+Adds the specified values to the end of list, in the given order.  Returns the number of items added to the list.
+<P> <SPAN class="FXN">insert</SPAN> (list, pos, val1, val2, ...)<BR>
+Adds the specified values to list at the specified position.  val1 will be the new value of list[pos], val2 will be at list[pos+1], etc.  The old value of list[pos] will end up after the final inserted value.  If pos is below 0 or beyond the end of the list, it will act like push_back.  The number of values added to the list will be returned.
+<P> <SPAN class="FXN">pop_range</SPAN> (list, s1, s2)<BR>
+Removes all values from s1 to s2 from list and returns a list containing them.  Remember, the first element of a list is element 0.  Anything below 0 or beyond the end of the list is interpreted as the last element of the list.  If s1 occurs after s2, the returned list is in reverse order.  If s1 isn't given, it's assumed to be 0, and if s2 isn't given, it's assumed to be the index of the last element of the list.</P>
+<P> <SPAN class="FXN">range</SPAN> (list, s1, s2)<BR>
+Same as above, except does not modify list.</P>
+<P><SPAN class="FXN">pop</SPAN> (list, s1)<BR>
+Removes a single value from list.  Anything below 0 or beyond the end of the list is interpreted as the last element of the list.  If s1 is not given, it's assumed to be the index of the last element of the list.
+<P><SPAN class="FXN">sort</SPAN> (list)<BR>
+Sorts the list from least to greatest.  The original list is modified.  The list is also returned on success.  Sorts integers, floats, and nulls at the front of the list, sorts strings after that.  Lists, dicts, and objects are not sorted, but they are separated out, in that order.  May do something else with them in a future version.  Currently uses a shell sort.
+<P><SPAN class="FXN">indexsort</SPAN> (list)<BR>
+Same as sort(), except doesn't modify the original list and returns a list of indices into the original list.  Useful if you have more complicated values (Like objects or lists) in a list and want to sort them only by one value they contain.  Jsut make a parallel list and call this function.
+</P><SPAN class="FXN">indexstablesort</SPAN> (list)<BR>
+Same as above, except it uses a stable sort.  Note that stability does not matter for sort(), as there's no way to tell identical strings, ints, or doubles apart.  Currently uses an iterative merge sort, and may be faster for large lists, though slower for shorter ones.
+</div>
+<P>
+
+<div>
+<B>Dict Functions</B><BR>
+<P><SPAN class="FXN">dictlist</SPAN> (Dict)<BR>
+Converts the dict Dict to a list.  The original dictionary is not modified.  The returned list contains (key1, val1, key2, val2, ...).  The order of the key/value pairs is unspecified.
+
+</P><SPAN class="FXN">dictkeys</SPAN> (Dict)<BR>
+<SPAN class="FXN">dictvalues</SPAN> (Dict)<BR>
+Returns a list containing the keys/values of the dictionary Dict.  dict is unaffect.  The order of the key/value pairs is unspecified, except that if both functions are called without modifying the dictionary, the elements of the returned lists will be in the same order.
+</div>
+
+<P>
+<div>
+<B>String functions</B><BR>
+<SPAN class="FXN">SaveString</SPAN> (group, key, value, saveNow)<BR>
+Saves the specified string value in the cfg file under "[group]", "key".  Both group and key are interpreted as strings.  If saveNow is 1, saves the string (And all previously specified strings) to the cfg file immediately.  If not, will save them on quit.  Will also automatically save the strings every hour or so, just in case.  Will not save strings to the ini file, so if you save a string located in the ini file and then try to load it, you'll get the string from the ini file.
+
+<P><SPAN class="FXN">GetString</SPAN> (group, key, defaultValue)<BR>
+Gets the specified string value under "[group]", "key".  If such a string exists in the ini file, loads that string.  Otherwise, if such a string exists in the cfg file, loads that one.  If such a string does not exist in either file, returns defaultValue, as a string.  Note that the contents of the init and cfg file are cached until the app quits, so modifying either file will not affect the value returned by this function until you restart LCD Miscellany (Which is why it is "GetString" instead of "LoadString").
+
+<P><SPAN class="FXN">strstr</SPAN> (string, match, start, end)<BR>
+Looks for the string match within string.  Returns null if it can't be found, and the 0-based index otherwise.  Note that 0 and null mean different things for this function.  start is the first position it checks, and end is 1 after the last position it checks (so start = 0, end = 10 will only check if match is contained entirely within the first 10 characters of string).  Start cannot be negative.  If end is 0 (or unspecified) or negative, checks up to the end of the string.  strstr() is case sensitive, and works on any type of string.  strstr is much like RegExp, except it doesn't have special codes, doesn't require UTF8, it's faster, and it doesn't create a list or a string when it finds a hit.
+
+<P><SPAN class="FXN">stristr</SPAN> (string, match, start, end)<BR>
+Just like strstr, but is case insensitive.  Only works on UTF8 strings.  Note that unlike all other case-insensitive functions (At the moment), this function converts characters to UTF16 and uses Microsoft's towupper function, which should work with a greater variety of characters than most other functions that use string comparisons.  This also means it has more overhead.
+
+<P><SPAN class="FXN">strsplit</SPAN> (string, match, start, end, nullstrings)<BR>
+Works much like strstr, except instead of returning the first hit, returns a list of substrings of string, each substring contains (in order) the characters between matches to the string match.  When two matchs overlap, the second one is ignored, unless the first overlaps with a an earlier match that was not ignored.  Resulting list does not contain the characters before start, or the characters after (and including) end.  If nullstrings is 1, two matches with no characters in between will result in a 0-length string.
+
+When given invalid parameters, returns null.  Otherwise, will always return a list of at least one string (One string would be the case of no matches).  Useful for splitting a string around delimiters.
+
+<P><SPAN class="FXN">strreplace</SPAN> (string, match, replace, count, start, end)<BR>
+Finds up to count repetitions of match in string, replacing them with replace.  If count is 0, finds all repetitions.  Only searches from start to end, where start is the 0-based index to start from, and end is 1 after the last character to check, just as in strstr.  If end is 0, searches up to the end of the string.  Currently always searches from start of the string to the end.  On failure (String over 100 MB long, any of last 3 arguments negative, end before start, or no matches found), returns the original string, unaltered.  Note that it's not recursive, so strsub("abb", "ab", "a") will return "ab".
+
+<P><SPAN class="FXN">strinsert</SPAN> (string, add, index)<BR>
+Creates a new string with add inserted in string at index.  If index is less than 0 or beyond the end of the string, add is added onto the end of string.  Can use strswap instead, but this is marginally simpler.
+
+<P><SPAN class="FXN">strswap</SPAN> (string, add, start, end)<BR>
+Works just like strinsert, except it removes all elements of string from start to end, where end is 1 after the last position to be removed.  Returns a list containing the new string and another string with the removed characters.  If end or start is below 0 or after the end of the string, that value is set to the end of the string.  If start is less than end (After the previous substitution), null is returned.  If start and end are equal, no characters will be removed.
+
+<P><SPAN class="FXN">substring</SPAN> (string, start, end)<BR>
+Returns a substring of string.  Start and end are just like strswap.  Identical to strswap(string, "", start, end)[1], though more efficient.
+
+<P><SPAN class="FXN">ToUpper</SPAN> (string)<BR>
+<SPAN class="FXN">ToLower</SPAN> (string)<BR>
+Converts the string to all uppercase or lowercase letters and returns the result.  Should work with all characters (Unlike string comparisons, which may not be accurate with non-US characters).
+
+<P><SPAN class="FXN">RegExp</SPAN> (string, regexp, start)<BR>
+Tries to match the regexp against a substring of a string.  Looks for substring of string, starting from position start, that matches the regular expression regexp.  If you want to match the regexp only against the entire string, and not against all its substrings, use "^&lt;regexp>?".  Both strings must be UTF8 strings.  On failure due to no match or invalid expression, returns null.  On success, gives a list of lists containing:  (string, first), where string matches a portion of the regexp in parenthases and first is the index in the original string where the parenthases match starts.
+
+<P>If you want to know where the entire string starts/stops, you can either enclose the entire regexp in parenthases or begin and end it with an empty pair.  For long strings, second option is probably faster.  Note that though the comparison uses the UTF8 character set, start, first, and last are all positions in terms of bytes, not UTF8 characters.
+
+<P>With codes that match a variable number of characters, the preferences of the codes earlier in the regexp are given priority.  The current implementation is rudimentary and quite slow, especially when using several .*'s on a large string.  May be improved in the future to be faster and/or more powerful.  Also note that *? is often much faster than *, when you're looking for a short match.
+
+<P>Escape codes:
+The escape character is '\'. Note that '|' is the escape code used by the scripting language, and strings are processed as normal at compile time, so "|"" and "|t" will match a double quote and a tab, respectively.  Escaped codes all match a single character.  They can appear either inside out outside of a [] block.  The pre-defined escape characters are:
+<P><UL>
+<LI>\w Matches a linear whitespace character (space or tab).
+
+<LI>\W Matches a whitesace character (space, tab, linebreak, or carriage return).
+
+<LI>\u Matches a capital letter from A to Z (No funky characters).
+
+<LI>\l Matches a capital letter from a to z (No funky characters).
+
+<LI>\d Matches a base 10 digit.
+
+<LI>\a Matches anything that \u or \l matches.
+
+<LI>\m Matches anything that \u or \l or \d matches.
+
+<LI>\x Matches a base 16 digit, including both lowercase and capital A-F.
+
+<LI>\n Matches a single carriage return or a string linebreak, but not both.  "|r??\n" will match a single linebreak of all 3 types (Unix, Windows, and Mac).  If you don't care about number of linebreaks, "\n*" works fine, of course.
+
+<LI>Anything else preceeded by a '\' matches that specific character, so "\.", "\\", "\[", "\]", "\(", and "\)" can all be useful, among other codes.
+</UL>
+
+<P>Supported codes:
+</P><UL>
+<LI> ^ matches the start of the string (Or the start index of the string, when the start parameter is non-zero) when it is the (unescaped) first element of regexp.  It doesn't match the first character of string, but rather forces the first character of string to be in the substring matched against regexp.
+
+<LI> $ matches the start of the string when it is the (unescaped) last element of regexp.  It doesn't match the last character of string itself, but rather forces the last character of string to be in the substring matched against regexp.
+
+<LI>[] matches a character that matches any one of the characters inside it.  Escape sequences are permitted, as are expressions with '-', such as 'a-g', which matches lowercase letters from a to g.  '-' must either be the first element of the list or must be escaped with a '\' if you want it to be treated as a character.  "[a-]", "[a-z-]", and "[\d-\a]" are all errors that will match nothing.  ] must either be the first character, or must be escaped.  "[z-a]" is the same as "[a-z]".  Note that other than ".", non-escape codes don't work between these braces ([#] matches only "#", for example).
+
+<LI>[^] acts just like [], except it only matches characters not inside it.  "[^\l\#]" matches everything but a lower case letter or the '#' character.  "[^]^[]" matches everything but '^', ']', and '['.
+
+<LI># matches a digit from 0-9.
+
+<LI>. matches everything but linefeeds and carriage returns, so [.\n] matches any character.  (Note: . behaving like this in [] blocks is non-standard).
+
+<LI>* matches 0 or more of the preceeding character (Preceeding character can be a single cahracter, a list of possible matches in [] (Or [^]), an escape code, or a '#'.  ** or a first character of * is an error.
+
+<LI>*? works just like *, except where * matches as many characters as possible, *? matches as few as possible.
+
+<LI>+ matches 1 or more of the preceeding character (Preceeding character can be a single cahracter, a list of possible matches in [] (Or [^]), an escape code, or a '#'.  ++, +*, or a first character of * is an error.
+
+<LI>+? works just like +, except where + matches as many characters as possible, +? matches as few as possible.
+
+<LI>? matches 0 or 1 or copies of the preceeding character
+
+<LI>?? works just like ?, except where ? prefers to match one character over 0 characters, ?? prefers matching 0 characters.
+
+<LI>{x} works just like *, except it matches exactly x instances.  {x}? does the same thing as {x}.
+
+<LI>{min,max} works just like *, except it matches anywhere from min to max instances.  If min is left blank, it's assumed to be 0, and if max is left blank, it's allows to match up to the entire string.  Whitespace is allowed anywhere between the brackets, too.  {min,max}? does the same thing, except it behaves like *?.
+
+<LI>() should be put around values in the list you want as output.  ()?, ()*. and ()+ all result in errors.  () cannot be nested, so ((()) will, for example, match "(()", with "((" added to the returned list.
+
+<LI>Any other character (Except escape codes) matches only itself.
+</UL>
+</div>
+
+<P>
+<div>
+<B>String Conversion functions</B><BR>
+<SPAN class="FXN">UTF8toASCII</SPAN> (string)<BR>
+<SPAN class="FXN">UTF8toUTF16</SPAN> (string)<BR>
+<SPAN class="FXN">UTF16toUTF8</SPAN> (string)<BR>
+<SPAN class="FXN">ASCIItoUTF8</SPAN> (string)<BR>
+Converts a string from the first format to the second.  Most internal routines assume strings are in UTF8 format (The exceptions are noted in their descriptions.  The exceptions may be modified in a future release to use UTF8 as well).  Note:  UTF8toUTF16 produces UTF16 strings with two terminating null bytes, but neither is included in the length of the string.  Concatenating two UTF16 strings created this way will result in a UTF16 string without the second null byte.  This should not matter, in the vast majority of cases.<BR>
+Also note that unlike the string parsing functions below, these do not stop at the first null character(s).
+</div>
+<BR>
+<div>
+<B>String Parsing functions</B><BR>
+<SPAN class="FXN">ParseBinaryInt</SPAN> (string, startOffset, length, unsigned)<BR>
+Reads an integer in binary format from a string.  The integer is assumed to be in little-endian format (low-order bytes first).  startOffset is where the 0-based offset where the first byte appears, and length is the number of bytes.  If length is no greater than 0 or startOffset is beyond the end of the string or less than 0, null is returned.  If startOffset+length is beyond the end of the string, length is reduced as needed.  If unsigned is not 0, the value is not sign-extended.  Overflows when length is greater than 8.
+<P>
+<SPAN class="FXN">ParseBinaryInts</SPAN> (string, startOffset, length, unsigned, count)<BR>
+Same as above, except it returns a list of count consecutive integers.  It returns 0's (Not nulls) when it runs off the end of the string, and can return partially parsed values from the start/end of the string.
+<P>
+<SPAN class="FXN">ParseBinaryIntReverse</SPAN> (string, startOffset, length, unsigned)<BR>
+Works just like ParseBinaryInt, except it uses big-endian order (network byte order).
+<P>
+<SPAN class="FXN">ParseBinaryFloat</SPAN> (string, startOffset, length)<BR>
+Works just like ParseBinaryInt, except length must be 4 or 8 and must not extend beyond the end of the string (It will not be truncated).  The number must be in x86 binary double or float format.
+<P>
+<SPAN class="FXN">ParseBinaryBinary</SPAN> (string, startOffset, length)<BR>
+Creates a substring of string, that starts at startOffset and has length characters.  If length extends beyond the end of the string, returns a shorter string.  Note that this is almost identical to substring, except it takes length instead of end index.
+<P>
+<SPAN class="FXN">ParseBinaryUTF8</SPAN> (string, startOffset, length)<BR>
+Works just like ParseBinaryBinary, except it ends the string if it runs into a null byte as well.  The specified section of the string must be in UTF8 format, and the output is in the same format (As that's the primary format for strings, and almost all functions assume UTF8 strings).  Note that if this is run on ASCII strings, it will work fine and return an ASCII string.
+<P>
+<SPAN class="FXN">ParseBinaryASCII</SPAN> (string, startOffset, length)<BR>
+Works just like ParseBinaryUTF8, except the specified section of the string must be in ASCII format.  Returns a UTF8 string.
+<P>
+<SPAN class="FXN">ParseBinaryUTF16</SPAN> (string, startOffset, length)<BR>
+Works just like ParseBinaryUTF8, except the specified section of the string must be in UTF16 format.  Length is the length in bytes.  If length is odd, it is reduced by 1.  Instead of stopping parsing at single nulls, it stops parsing at aligned two-byte nulls, of course.
+<P>
+<SPAN class="FXN">JSONdecode</SPAN> (string)<BR>
+Attempts to decode a JSON string into lists/dicts/integers/doubles.  null and false from the original string both become null.  True becomes 1.  Does its best on strings that don't fully adhere to spec, but I make no guarantees.  Note that it currently only supports UTF8.  Will add UTF16 support if anyone asks or I need it for some particular purpose.  Or the mood strikes me.
+</P>
+<SPAN class="FXN">Bencode</SPAN> (data)<BR>
+<SPAN class="FXN">BencodeExact</SPAN> (data)<BR>
+<SPAN class="FXN">Bedecode</SPAN> (string)<BR>
+Attempts to encode/decode bencoded string.  Exact doesn't create a standard bencoded string, but rather a string that will produce exactly the source string when decoded (nulls and doubles use special encodings).  Doesn't work on objects.  Dicts are ordered in lexical order, like they should be.  Not fully tested.
+</div>
+
+<P>
+<div>
+<B>Drawing Functions</B><BR>
+Note:  None of the drawing functions do anything except when called in response to a Draw event.  Only NeedRedraw(), TextSize(), Font(), UseFont(), RGB(), and RGBA() can be called at other times.  Drawing functions do not draw directly to the LCD, but to a buffer which is copied to the LCD when the Draw event is finished being handled.  All these functions have been pretty heavily optimised, so CPU usage is negligible unless you draw large numbers of points one at a time.  All functions handle points off of the screen.
+
+<P><SPAN class="FXN">NeedRedraw</SPAN> ()<BR>
+Signals that the screen needs to be redrawn.  A Draw event will be called at the next possible opportunity.  If called multiple times, only a single Draw event will be triggered (Which is the main purpose for the function).  For more info, see <A HREF="Events.html">events</A>.
+
+<P>Note that if you try to refresh too often (2-3 times within ~ 30 milliseconds), some of the refreshes won't actually be displayed at all, as the LCD only refreshes 30 times a second.
+<P><SPAN class="FXN">RGB</SPAN> (r,g,b)<BR>
+Given red, green, and blue color values between 0 and 255, returns the corresponding color, as an integer.  May change ordering later, so I recommend you use this whenever you set a background/drawing color.  Alpha is set to 255.  Result is undefined when numbers are not in the valid range.
+<P><SPAN class="FXN">RGBA</SPAN> (r,g,b,a)<BR>
+Same as above, escept also takes an alpha value from 0 to 255.
+<P><SPAN class="FXN">SetBgColor</SPAN> (color)<BR>
+Sets the color used with "Clear" drawing functions.  Default is white (RGB(255,255,255)), which corresponds to unlit on a 2-color screen.  Returns old bg color.
+<P>Background and drawing colors stay with a screen across draw events, but I strongly recommend always restoring them first thing, if you have a color display.
+<P><SPAN class="FXN">SetDrawColor</SPAN> (color)<BR>
+Sets the color used with "Fill" drawing functions (And also with DisplayText()).  Default is black (RGB(0,0,0)), which corresponds to lit on a 2-color screen.  Returns old drawing color.
+<P>Background and drawing colors stay with a screen across draw events, but I strongly recommend always restoring them first thing, if you have a color display.
+<P><SPAN class="FXN">ClearScreen</SPAN> ()<BR>
+Clears the screen.
+<P><SPAN class="FXN">GetHDC</SPAN> ()<BR>
+Gets the HDC for the current drawing surface.  HDCs should only be assumed to be valid for the duration of the current draw event.  HDCs can be drawn to directly by dlls.  Must call the Windows function GdiFlush() when done drawing to them and before calling any scripted drawing functions, and must restore their original state in terms of colors, fonts, and brushes as well.
+<P>
+<SPAN class="FXN">DrawRect</SPAN> (x,y,x2,y2)<BR>
+<SPAN class="FXN">InvertRect</SPAN> (x,y,x2,y2)<BR>
+<SPAN class="FXN">ClearRect</SPAN> (x,y,x2,y2)<BR>
+<SPAN class="FXN">XorRect</SPAN> (x,y,x2,y2,color)<BR>
+Draws/Inverts/Clears the specified rectangle.  Upper left corner of an image is (0,0).  Drawing thin rectangles is faster than drawing lines parallel to the edges of the screen (Especially horizontal lines).  XorRect xor's a rectangle with the specified color.  Intended primarily for drawing cursors.
+<P>
+<SPAN class="FXN">ColorRect</SPAN> (x,y,x2,y2,color)<BR>
+Colors the specified rectangle the specified color.
+<P>
+<SPAN class="FXN">ClearLine</SPAN> (x,y,x2,y2)<BR>
+<SPAN class="FXN">InvertLine</SPAN> (x,y,x2,y2)<BR>
+<SPAN class="FXN">DrawLine</SPAN> (x,y,x2,y2)<BR>
+Draws/Inverts/Clears a line from (x,y) to (x2,y2).
+<P>
+<SPAN class="FXN">ColorLine</SPAN> (color,x,y,x2,y2,x3,y3,...)<BR>
+Colors the specified lines using the specified color. Draw connecting lines between all adjacent pairs of points passed to it, so all points except the first and the last are endpoints or two lines.
+<P>
+<SPAN class="FXN">DrawPixel</SPAN> (x,y)<BR>
+<SPAN class="FXN">InvertPixel</SPAN> (x,y)<BR>
+<SPAN class="FXN">ClearPixel</SPAN> (x,y)<BR>
+Draws/Inverts/Clears a pixel at (x,y).
+
+<!--- <P><SPAN class="FXN">WinFont</SPAN>(height, width, escapement, orientation, weight, italic, unterline, strikeout, charset, outputPrecisition, clipPrecision, clipPrecision, quality, pitchAndFamily, face)<BR>
+Creates a windows style font.--->
+
+<P>
+
+<P>
+<SPAN class="FXN">DrawClippedText</SPAN> (text, left, top, right, bottom, flags)<BR>
+Draws text at the specified location using the active draw color, cutting off (Without word wrap) at the specified location.  Currently always starts drawing at top left corner.
+
+<P>
+Only currently supported flag is DT_NOCLIP, which prevents clipping text.  More flags may be added later.
+<P>
+
+<SPAN class="FXN">DisplayText</SPAN> (text, x, y, invert, mode)<BR>
+<SPAN class="FXN">DisplayTextRight</SPAN> (text, x, y, invert, mode)<BR>
+<SPAN class="FXN">DisplayTextCentered</SPAN> (text, x, y, invert, mode)<BR>
+Displays text at (x, y).  DisplayTextRight() uses (x, y) as the upper right corner, DisplayTextCentered() uses it as the upper center of the text, and DisplayText() uses it as the upper left.  If invert is not 0, InvertRect() is called around the text after drawing it.  If mode is 0, draws the text normally.  If mode is 1, inverts the pixels occupied by the drawn text (Not the surrounding rectangle).  If mode is -1, clears the pixels occupied by the text.  Returns the width of the drawn text, in pixels.  Centered() and Right() align all rows independently and ignore leading/trailing spaces and tabs (ASCII spaces only).  In general, using InvertRect() around a region works better than using the invert parameter of this function.
+<P>
+Character 2 in a string toggles between bold and non-bold text, assuming the active font is not bold, in which case character 2 is ignored.  Note that if you have the font explicitely loaded as bold elsewhere, no extra memory will be used.  Otherwise, it will load a bold copy of the font into memory the first time it encounters a character 2 when rendering a given font.
+<P>
+Note that invert, mode=1 and character 2 bold toggles do not currently work with high resolution windows fonts.
+<P>
+<SPAN class="FXN">TextSize</SPAN> (text)<BR>
+Returns a list containing (width, height) of text, in pixels, if displayed using the current font.  Text is only formatted to be on multiple lines if it has hard line breaks (Windows, Unix, and Mac line breaks are all supported).  If text is the empty string, width is 0 but the returned height will be the height of the font.
+<P>
+<SPAN class="FXN">FormatText</SPAN> (text, width)<BR>
+Formats the text to be no wider than width, using the current font.  Returned value is a new string, with line breaks added (Original line breaks are not removed, and are taken into account in formatting).  Also replaces Mac line breaks ('\r') with unix linebreaks ('\n').  Leaves Windows line breaks untouched.  This allows the use of regexps to separate the lines of FormatText, so for large amounts of text, can easily (relatively) remove a few lines and display those, as DisplayText() functions aren't designed for large amounts of text.
+<P>
+<SPAN class="FXN">DrawImage</SPAN>(image, destx, desty, srcx, srcy, width, height)<BR>
+<SPAN class="FXN">InvertImage</SPAN>(image, destx, desty, srcx, srcy, width, height)<BR>
+<SPAN class="FXN">ClearImage</SPAN>(image, destx, desty, srcx, srcy, width, height)<BR>
+Draws/Inverts/Clears an Image object using the currently selected colors.  Note that all functions treat images as if they're masks - don't clear the background, only draw using the corresponding color where the image has a value of 1.
+<P>
+DrawImage can draw Image32 objects.  It uses alpha values, if present, and can handle all 4 image tyes (RGBA, RGB, Grayscale+alpha, grayscale).
+
+<P><SPAN class="FXN">IntersectImage</SPAN>(image, destx, desty, srcx, srcy, width, height)<BR>
+Works just like DrawImage, except that it doesn't actually draw anything.  It returns 1 if there would be any over draw if it were to draw the specified image.  Intended for use in games, if anyone is foolhardy enough to try to write one that actually needs collision detection.
+
+<SPAN class="FXN">DrawTransformedImage</SPAN>(image, destx1, desty1, destx2, desty2, destx3, desty3, destx4, desty4, srcx1, srcy1, srcx2, srcy2, srcx3, srcy3, srcx4, srcy4)<BR>
+<P>Draws the specified portion of the specified image at the specified position using bilinear filtering.  Will not work on images with 1 pixel width or height.  Only supports Image32s.
+
+<P>The destx/desty values are mandatory and specify the bounding 4-cornered shape to draw the image at.  Shame must be convex.  Points can be in either a clockwise or counterclockwise order.  The 4 source points specify what portions of the image match which corresponding destination point.  X should range from 0 to image width-1, Y from 0 to image height-1.  Unlike most drawing functions, all values can be floating point.  If all src values are 0 or not specified, they're replaced with the bounding rectangle of the image, in clockwise order, starting from the upper left point (0,0).
+
+<SPAN class="FXN">DrawRotatedScaledImage</SPAN>(image, destx, desty, rotate, scalex, scaley)<BR>
+<P>Draws the given image at location destx, desty with the specified rotation angle and x/y scales.  Will not work on images with 1 pixel width or height.  Only supports Image32s.
+
+<P>destx/desty are the coordinates up the upper left hand corner of where to draw the image.  Rotate is the clockwise angle, in radians, to rotate the image.  Note that the image is rotated about where the center would be if it were drawn without rotation, so the image will appear to rotate in place if the dest position is kept constant and rotate is changed.  scalex and scaley are how to scale the source image's width/height when drawing.  If scalex is 0 or not given, it's assumed to be 1.  If scaley is 0 or not given, it's assumed to be the same as scalex.
+
+<P><SPAN class="FXN">Font</SPAN>(face, height, width, bold, italic, quality)<BR>
+Creates a Font object with the specified parameters.  Face is the font (Arial, Verdana, etc) as a string.  Height is the height and width is the desired width.  If width is 0 or null (recommended), an appropriate width will automatically be chosen from the height.  Bold is 1 if you want bold, 0 otherwise, and same with italic.  You can also set Windows font weight exactly by using a bold value greater than 1.  If quality is 0, creates an internal 1-bit font for fast rendering.  If it's one of ANTIALIASED_QUALITY, CLEARTYPE_QUALITY, or CLEARTYPE_NATURAL_QUALITY, it will use a Windows font and drawing functions with the specified quality.   Returns 0 on fail (Invalid width, height, or couldn't create font.  Generally when you provide an invalid font name, windows provides some random font anyways).  Note:  there's a maximum character height/width of 100 pixels, including spacing.  I can't really see this being an issue.  Both TrueType and bitmap fonts are supported, but as I use my own code to render TrueType fonts (To keep CPU usage down), spacing of true type fonts is often not perfect.  May work on this in a future version or start including a nice set of bitmap fonts.  Note: invert flag does not work with Windows fonts.
+
+<P>Each font caches characters the first time they're redered.  Calling CreateFont multiple times with the same parameters will return a copy of the same object, assuming the old object still exists.  Like all objects, fonts are automatically deleted when they fall out of scope (And aren't the currently active font, either).  Creating a font can have a large amount of overhead, but once they're created and you've drawn a couple characters, they are very fast.
+
+<P>Fonts in which characters look different depending on which character is before/after them are not displayed correctly.  May add support for simple codes, like those that add accent marks to another character or can be merged with the previous character, but more complicated multiple character operations, like those in Arabic fonts, will probably never be supported.
+
+<P> <SPAN class="FXN">UseFont</SPAN> (font)<BR>
+Sets the active font for the current screen.  Not called in response to a NeedRedraw, uses a dummy screen.  Should be persistant for each screen, but I recommend setting it whenever there's any doubt, anyways.  Font can be either a Font object or 0.  0 is the internal font, which is all caps (04b08).  The previously active font is returned (Note:  This is always a font object, even when using the internal font).  Null is returned on failure (When font isn't 0 or a font object).
+
+</P> <SPAN class="FXN">GetFontHeight</SPAN> (font)<BR>
+Returns the height of the specified font, in pixels.  If no arguments are given, returns the height of the active font.<BR>
+</div>
+<BR>
+<div>
+<B>Formatting Functions</B><BR>
+<SPAN class="FXN">FormatTime</SPAN> (format, time, timezone)<BR>
+Formats time using format.  If time is 0, uses the current time.  If time is not 0, time must be the current UTC time, in seconds (Which is the format returned by Time()).  If no time zone is given, uses the local time zone according to Windows.  See bottom of file for time formatting and time zone details.
+<P><SPAN class="FXN">FormatValue</SPAN> (val, p1, p2);<BR>
+Formats val using sprintf.  p1 is the value before the period, p2 is the value after, so "Format(val, 3, 0)" would display no decimal digits and at least 3 characters, etc.
+</P>
+<SPAN class="FXN">FormatSize</SPAN> (size, minSize, digits, nospace)<BR>
+Formats size as a number of bytes.  minSize is the minimum display type to use (0 is bytes, 1 is kB, 2 is MB, etc).  Digits are the number of digits to use, less 3.  This function exists to ensure consistency in terms of number of digits displayed and to make it easier to prevent overlapping text.  The size is labeled with a k, M, G, etc, as needed.  If no space is 0, there's a space between the displayed number and the label.  If it's 1, there is no space.  If it's 2, there is no label or space.  If nospace is 3 or 4, it behaves just like 0 and 1, respectively, except that "b" is used for bytes.  If you always want to display using the same units, you should just use FormatValue.
+</div>
+<P>
+<div>
+<B>Data collection Functions</B><BR>
+<SPAN class="FXN">Time</SPAN> ()<BR>
+Returns the current UTC time as a count of total seconds.  Use it with FormatTime() or use changes in it to get durations.
+<P><SPAN class="FXN">GetTickCount</SPAN> ()<BR>
+Returns the time since the computer was last booted, in milliseconds.  Resolution varies (Normally 10-15 ms under most MS OSes).  Note that the Microsoft function it uses (Coincidentally called GetTickCount()) overflows every 49 days, so this is generally not useful as an uptime counter (There's a performance counter with that if you want it).  However, as long as you call this function once every 49 days, LCD Miscellany will notice overflows and handle them transparently, so values won't overflow as long as you don't restart LCD Miscellany.
+<P>
+<SPAN class="FXN">GetUsedMemory</SPAN> ()<BR>
+<SPAN class="FXN">GetTotalMemory</SPAN> ()<BR>
+Gets used/total physical memory, as an integer.
+
+<P>
+<SPAN class="FXN">GetMemoryStatus</SPAN> ()<BR>
+Returns a list containing (totalMem, usedMem, totalPage, availPage).  First two are physical memory, next two are page file memory (What previous versions called "VM", possibly incorrectly).  This function is just as fast as the previous two, other than list creation overhead.  Might remove them in a future version.
+
+<P>
+<SPAN class="FXN">GetVram</SPAN> ()<BR>
+Returns a list containing (Total VRAM, Used VRAM).  Not sure what it returns on dual video card systems.  This is the only function that uses DirectDraw, so using it may cause LCD Miscellany to consume significantly more system resources, until you call CleanupDdraw(), and even then, may continue to consume slightly more resources.
+<P>
+<SPAN class="FXN">CleanupDdraw</SPAN> ()<BR>
+Frees DirectDraw object created for GetVram(), freeing up a significant amount of memory.
+<P>
+<SPAN class="FXN">GetUpstream</SPAN> ()<BR>
+<SPAN class="FXN">GetDownstream</SPAN> ()<BR>
+Get current bandwidth usage.  Can work in cases where performance counters do not.
+<P>
+<SPAN class="FXN">GetAllUp</SPAN> ()<BR>
+<SPAN class="FXN">GetAllDown</SPAN> ()<BR>
+Returns a dictionary containing the current up/down stream rate of all installed network devices, other than loopback devices (Indexed by device name).  Can work in cases where performance counters do not.  Uses the same method as the two above functions.  To get your network device name, go to its properties screen and it'll be near the top of the window.
+<P>
+<SPAN class="FXN">GetDiskSpaceTotal</SPAN> (drive)<BR>
+<SPAN class="FXN">GetDiskSpaceFree</SPAN> (drive)<BR>
+Gets the total/free disk space of the specified drive, in bytes, as an integer.  This is one of the more system intensive functions.
+<P>
+<SPAN class="FXN">GetVistaMasterVolume</SPAN> ()<BR>
+Returns the list (vol, mute) under Vista, and null under earlier OSes.  Vol is value from 0 to 1, and mute is 1 for muted and 0 otherwise.
+<P>
+<div><SPAN class="FXN">VolumeInformation</SPAN> (drive)<BR>
+Gets the volume information for a drive, returning a VolumeInforation object.  Drive must be in the format "C:\".  Returns a volume inforation structure, see msdn documentation on GetVolumeInforation() and GetDriveType() for info on meaning of values in returned object.
+
+<P><PRE> struct <SPAN class="CLASS">VolumeInformation</SPAN> {
+    var <SPAN class="CLASS_VAR">%volumeName</SPAN>,
+        <SPAN class="CLASS_VAR">%volumeSerialNumber</SPAN>,
+        <SPAN class="CLASS_VAR">%maximumComponentLength</SPAN>,
+        <SPAN class="CLASS_VAR">%fileSystemFlags</SPAN>,
+        <SPAN class="CLASS_VAR">%fileSystem</SPAN>,
+        <SPAN class="CLASS_VAR">%driveType</SPAN>;
+	function <SPAN class="FXN">VolumeInformation</SPAN> (drive);<BR>
+};</PRE></div>
+
+<P><SPAN class="FXN">GetDiskSpace</SPAN> (drive)<BR>
+Returns a list containing free space and total space on a drive.  More efficient than using both the previous functions (Added because getting disk space is one of the two operations the application spends most of its doing.  The other is monitoring performance counters).
+
+<div><SPAN class="FXN">GetDiskSmartInfo</SPAN> (drive)<BR>
+Returns a list of the SMART attributes for a specified drive.  Drive should be the physical drive number, a letter followed by a colon, or raw path of a drive ("\\.\C:").  Values are indexed by their id, so temperature (id 192) is the 192nd item in the list.  Note that most values in the list will be null and the list will always have 256 elements, except on failure (Drive doesn't support SMART, invalid drive name, SMART disabled for the drive, etc).  This function locks longer than almost any other function.  The non-null values of the list are of the following type:
+
+<P><PRE> struct <SPAN class="CLASS">SmartAttribute</SPAN> {
+    var <SPAN class="CLASS_VAR">%value</SPAN>,       // Raw value.
+        <SPAN class="CLASS_VAR">%normalized</SPAN>,  // Normalized value (From 0 - 255).
+        <SPAN class="CLASS_VAR">%worst</SPAN>,       // Worst recorded normalized value
+        <SPAN class="CLASS_VAR">%flags</SPAN>;       // 2 bytes of flags.
+};</PRE>
+
+<P>Value is what you generally want to display. For more info, see SMART documentation (Disclaimer:  SMART documentation may not actually exist on this planet).
+</div>
+
+<P><SPAN class="FXN">GetEmailCount</SPAN> ()<BR>
+Gets the number of unread email from the registry.  As far as I know, only Outlook and Outlook Express update these values.
+<P><SPAN class="FXN">GetVersion</SPAN> ()<BR>
+Returns the version of the application as a 5-element list.  Version 0.2.9 revision 14, 32-bit would be (0,2,9,14,32).
+<P><SPAN class="FXN">GetVersionString</SPAN> (format)<BR>
+Returns the version number as a single string.  If format is 0, it's prefixed by "LCD Miscellany".  If it's 1, it doesn' include "LCD Miscellany", and if it's 2, it excludes the executable type (32/64-bits).
+<P><SPAN class="FXN">GetSharedMemory</SPAN> (name)<BR>
+Gets the shared memory buffer with the specified name and returns it as a string (in binary format).  Length is generally a multiple of 4096, regardless of how many meaningful bytes are in the string, so don't rely on this being the exact size of the data structure you're reading.
+<P><SPAN class="FXN">GetFrapsData</SPAN> ()<BR>
+Returns a dictionary containing data from Fraps.  Fraps must be running to get any data.  The entries in the dictionary are "name", "fps", "frame", "lastframe", "width", "height", "renderer", and "unknown2".  "name" is the executable name for the game, without the extension.  fps is the frames per second.  "frame" is a frame count of some sort.  Stopping and restarting the running app doesn't reset this.  "lastframe" is the time, in millisecond, when the last frame was displayed.  I believe the time starts at 0 when the computer boots, but I'm not positive.  "width" and "height" are self-explanatory.  According to <B>linFox</B>, "renderer" is 1 for OpenGL, 2 for DX7, 3 for DX8, 4 for DX9 and 5 for DX10.  "unknown2" I'm unsure of.  When no game is running, the "name" is generally the last game run and all other values (except frame) are 0.  Before Fraps is loaded, null is returned instead of a dictionary, and dictionary ops on it (null) will just return null.
+
+<P><SPAN class="FXN">UnloadFraps</SPAN> ()<BR>
+Unloads the Fraps dll.  May reduce resource usage a bit, or may not.  Will automatically be reloaded as needed.
+<P>
+<SPAN class="FXN">GetLocalIP</SPAN> ()<BR>
+<SPAN class="FXN">GetLocalDNS</SPAN> ()<BR>
+Gets your local ip/host name.  If you have multiple NICS, it will only display one of them (Might improve support for that later).  If you're not behind a firewall, this is preferable to using the below commands.
+<P>
+<SPAN class="FXN">GetRemoteIP</SPAN> ()<BR>
+<SPAN class="FXN">GetRemoteDNS</SPAN> ()<BR>
+Gets your remote ip/host name.  Your ip is taken from one of a number of sites in the config file ("IP Lookup").  It always starts with a random one and then goes down the list each time it updates (Update times are in the file.  Currently it's once every two hours by default.  4 minutes if the last try didn't get any value, by default).  Http code still could use a bit of work, but it should work fine with most servers.  Code searches for an IPv4 ip and picks the one surrounded by the least garbage.  It's not perfect, by any means, but it works on the few sites I tried it on.  Code is ignorant of HTML, too, so it could even return a value in a tag.
+<P>
+<div><PRE>struct <SPAN class="FXN">SystemState</SPAN> () {
+    var <SPAN class="CLASS_VAR">%screenSaverOn</SPAN>,    // 1 if screensaver is on, 0 otherwise.
+        <SPAN class="CLASS_VAR">%monitorOff</SPAN>;       // 1 is monitor is off, 0 otherwise.  Always 0 on pre-Vista
+                           //    OSes, as no easy way to get it, pre-Vista.
+    function <SPAN class="FXN">SystemState</SPAN> ();
+}
+</PRE>
+<P>SystemState() gets the current state of the system.  Note that values may be a second or two out of date.  Other values may be added in the future.
+</div>
+<P>
+<div>
+<SPAN class="FXN">NvAPI_GPU_GetTachReading</SPAN> ()<BR>
+Returns a list of fan speeds of every nVidia's GPU's fan on the system.  GPU's that don't return a fan speed for whatever reason add a null to the list.
+
+<P><SPAN class="FXN">NvAPI_GPU_GetThermalSettings</SPAN> ()<BR>
+Returns a list containing one list of temperatures for every nVidia physical GPU installed on the system.  GPU order should match NvAPI_GPU_GetTachReading(), with null returned for GPUs that fail to return any information.  Each GPU has between 1 and 3 temperatures, and each temperature is an object of type:
+
+<P><PRE>struct <SPAN class="FXN">NvGPUThermalSettings</SPAN> {
+    var <SPAN class="CLASS_VAR">%controller</SPAN>;
+    var <SPAN class="CLASS_VAR">%defaultMinTemp</SPAN>;
+    var <SPAN class="CLASS_VAR">%defaultMaxTemp</SPAN>;
+    var <SPAN class="CLASS_VAR">%currentTemp</SPAN>;
+    var <SPAN class="CLASS_VAR">%target</SPAN>;
+}
+</PRE>
+</P>See nvapi documentation for what values actually mean.  Note that the nVidia documentation often has little to no information content ("The max default temperature value of the thermal sensor in degrees centigrade").
+</div>
+<P>
+<div><PRE>struct <SPAN class="FXN">NvThermalSettings</SPAN> {
+    var <SPAN class="CLASS_VAR">%coreTemp</SPAN>,    // Core temperature
+        <SPAN class="CLASS_VAR">%ambientTemp</SPAN>, // Ambient temperature. Experimentally, returns 0 on my system.
+        <SPAN class="CLASS_VAR">%tempLimit</SPAN>;   // Maximum safe temperature (?)
+    function <SPAN class="FXN">NvThermalSettings</SPAN> (monitor);
+}
+</PRE>
+<P>NvThermalSettings() attempts to get temperature information from the nVidia adapter associated with the specified monitor using NvCplGetThermalSettings in nvcpl.dll and returns an NvThermalSettings object containing the information it gets.  Returns null on failure.  Calling with no arguments will, as usual, act just like you passed it 0.  Note that calling this function will load nvcpl.dll into the mod's memory space, which can have a very significant impact on memory usage.
+</P>
+Note that on x64 systems, you generally only have a 64-bit version of nvcpl.dll installed.  Therefore, this function will generally fail if you use the 32-bit LCDMisc.exe.  Seems to crash on a great number of 32-bit systems, for reasons unknown.
+</div>
+</div>
+<BR>
+<div>
+<B>Window functions</B><BR>
+<SPAN class="FXN">GetScriptWindow</SPAN> ()<BR>
+Returns the window handle (HWND) of LCD Miscellany's window.  The window can be used to trigger events.
+<P><SPAN class="FXN">GetForegroundWindow</SPAN> ()<BR>
+Returns, as an integer, the window handle of the currently foreground window (Not the visible view, but whatever is the top windows window).  You should not use the value for math operations, of course.  On failure, it should return 0.
+<P><SPAN class="FXN">EnumWindows</SPAN> ()<BR>
+Returns a list of all top level windows.
+<P><SPAN class="FXN">EnumChildWindows</SPAN> (hWnd, visible)<BR>
+Returns a list of all child windows of hWnd.  If hWnd is 0, acts like EnumWindows.  If visible is 1, only returns visible windows.
+<P><SPAN class="FXN">GetWindowText</SPAN> (handle)<BR>
+Returns, as a string, the title of the window with the specified handle.  Returns null on failure.
+<P><SPAN class="FXN">GetWindowRect</SPAN> (handle)<BR>
+Returns, as a list, the bounding rectangle of the window with the specified handle.  Returns null on failure.  Order is (left, top, right, bottom).  All values are in screen coordinates.  Note that it returns the entire area taken up by the window, including the title bar and edges.
+<P><SPAN class="FXN">GetWindowClientRect</SPAN> (handle)<BR>
+Same as GetWindowRect(), but returns the client rect of the window, also in screen coordinates.  Note that this can change over time, even for stationary windows, as the client rect doesn't include menus or scroll bars.
+<P><SPAN class="FXN">SendMessage</SPAN> (handle, message, wparam, lparam)<BR>
+<BR><SPAN class="FXN">PostMessage</SPAN> (handle, message, wparam, lparam)<BR>
+Work just like the corresponding windows functions.  Note that improper use of these functions can crash LCD Misc.  Only use functions that take integers as arguments, return integers as arguments, and require no special cleanup/etc.  Returns value is whatever the windows function return.
+<P><SPAN class="FXN">CloseWindow</SPAN> (handle)<BR>
+Attempts to close the specified window.  Some applications might not like it/ignore it (I just send a WM_CLOSE message).  Always returns 0.
+<P><SPAN class="FXN">IsWindow</SPAN> (handle)<BR>
+Returns 1 if handle is the handle of an open window, and 0 otherwise.  Useful for detecting if a window has been closed.
+<P><SPAN class="FXN">FindWindow</SPAN> (class, title, parentHandle, prevChildHandle)<BR>
+Works like Microsoft's FindWindow() and FindWindowEx() functions.  Looks for a window of the given class with the specified title.  When used here, both 0-length strings and nulls correspond to unspecified class/title rather than the 0-length class names/windows titles.  Class names are used internally by windows and are defined by the application that created the window.
+Returns 1 if handle is the handle of an open window, and 0 otherwise.  Useful for detecting if a window has been closed.  parentHandle specifies the handle of the windows parent, and prevChildHandle specifies the handle of the parent's child to start searching *after*.  Both handles can be null (Or left out).
+<P><SPAN class="FXN">GetWindowModuleFileName</SPAN> (handle, fullPath)<BR>
+Returns, as a string, executable file name of the specified window.  If fullPath is 0, returns only the file name; otherwise, returns the entire path (Along with the file name).  Returns null on failure.
+<P><SPAN class="FXN">GetWindowProcessId</SPAN> (handle)<BR>
+Returns, as an integer, the process id of the process associated with the window with the specified handle.  Process ids should not be used with math operations.  On failure, returns 0.
+<P><SPAN class="FXN">GetProcessFileName</SPAN> (processId, fullPath)<BR>
+Just like GetWindowModuleFileName(), except uses process id instead of a Window handle.
+<P><SPAN class="FXN">KillProcess</SPAN> (processId)<BR>
+Kills the specified process (Which can be found by GetWindowProcessId or by the performance counter that lists the process ids of all processes).  On success, returns 1.  Otherwise, returns 0.
+
+<P><SPAN class="FXN">SetProcessPriority</SPAN> (processId, priority)<BR>
+Sets the priority of the specified process.  If priority is between 0 and 5, sets to the corresponding priority (idle = 0, below normal, normal = 2, above normal, high, realtime = 5).  Be careful with high and realtime.  If priority is another value, passes it on directly to the windows API function SetPriorityClass().  On success, returns 1.  Otherwise, returns 0.
+
+</P><SPAN class="FXN">GetProcessPriority</SPAN> (processId)<BR>
+Gets the priority of the specified process.  Returns null on failure or unrecognized priority.  Otherwise, returns from 0 to 5, as defined above.
+</div>
+<P>
+<div>
+<B>Command functions</B><BR>
+<SPAN class="FXN">Run</SPAN> (command, args, type)<BR>
+Runs the specified command, with the given arguments.  URLs and file names/paths should both work fine.  You can use environment variables in command, though not in args, so things like "%userprofile%" work, but it's smart enough not to check for them in urls, so http escape sequences shouldn't cause an issue.  Returns null on failure.
+
+If type is 0, Run() returns immediately.  If it is 1, it waits for the new process to be initialized and starts waiting to received data.  Note:  While LCD Miscellany is waiting for a thread to start, it is completely locked, as if Sleep() has been called (Rather than Wait()).  If type is 0 or 1, it returns a process id on success and 0 on failure.
+
+If type is 2, Run() calls ShellExecute (Instead of CreateProcess()).  The difference is ShellExecute() provides no process id, but it allows launching associated executables.  <NOBR>'Run("http://www.google.com", , 2);'</NOBR> will launch a new browser window, for example.
+
+</P><SPAN class="FXN">RunSimple</SPAN> (command, args, wait)<BR>
+Same as run, but doesn't check for environment variables.
+</div>
+<P>
+<div>
+<B>Timer functions</B><BR>
+<SPAN class="FXN">CreateFastTimer</SPAN> ("function", milliseconds, runNow, object)<BR>
+Calls the specified function every time the specified interval has passed.  If object is an object, calls that object's method with the speficied name; otherwise, calls the function with the given name.  Repeatedly runs the function until stopped or destroyed.  If runNow isn't 0, the function is run once immediately, before the function even returns.  Milliseconds should be between 10 and 3600000, inclusive.  Returns a value that identifies the timer and can be used to destroy it or change the interval.  This value is also passed to the specified function as its only argument.  Note that the application is basically single threaded, so the function call may be delayed if something else is going on (Like redrawing).  The effect of this can vary significantly, so basically, don't expect it to be all that accurate, especially after running repeatedly with short intervals.  Returns -1 if it fails for any reason.
+
+<P><SPAN class="FXN">CreateTimer</SPAN> ("function", seconds, runNow, object)<BR>
+Calls the specified function every time the specified interval has passed.  If object is an object, calls that object's function with the speficied name.  If runNow isn't 0, the function is run once within the next couple seconds, but not before the function returns (Note that this is different from fast timers.  The difference is because the timer types are meant to be used differently).  Uses fewer system resources than CreateFastTimer.  Returns a value that identifies the timer and can be used to destroy it or change the interval.  This value is also passed to the specified function as its only argument.  Note that these timers use the system clock, which only gives times to the nearest second.  Also, they are only activated during performance counter updates.  These timers are intended for things you want to do at relatively large regular intervals (> 20 seconds), and aren't time critical, like update RSS feeds.  Returns -1 if it fails for any reason.  Seconds must be between 1 and 2^29.
+
+<P><SPAN class="FXN">ModifyFastTimer</SPAN> (fastTimer, milliseconds)<BR>
+Changes the delay on a fast timer.  Doesn't work on other timers.  The timer will restart from scratch, rather than taking a partially elapsed interval into consideration.  Note:  The performance counter update timer is a fast timer, with a default interval of 1000 milliseconds.  You can change this with a call to ModifyFastTimer by using an id of 0.  This will affect a couple other things as well that depend on the performance counter update rate (Like the blinking cursor of the text editor, which blinks at twice the performance counter rate).  None of the other functions work on the performance counter timer.  Returns -1 if it fails for any reason, returns 0 otherwise.
+<P><SPAN class="FXN">ModifyTimer</SPAN> (timer, seconds)<BR>
+Changes the delay on a slow (not fast) timer.  Doesn't work on other timers.  The timer will be called again after either seconds have passed since the previous call (Or the initial CreateTimer call), or soon after the ModifyTimer call, depending on when the last function call was (Note that this is the opposite behavior from ModifyFastTimer).  Returns -1 if it fails for any reason, returns 0 otherwise.
+<P><SPAN class="FXN">StopTimer</SPAN> (timer)<BR>
+Stops a timer.  Can be restarted with StartTimer or ModifyTimer.  Works on both fast and slow timers.  Returns -1 if it fails for any reason, returns 0 otherwise.
+<P><SPAN class="FXN">StatTimer</SPAN> (timer, runNow)
+Starts a stopped timer or restarts a timer.  If runNow is nonzero, immediately, if it's a fast timer, or in the next few seconds, if it's a slow timer.  Time until the timer triggers is reset to the full timer time (That is, the timer starts over from scratch, rather than taking into account how much time passed until it was stopped, if it had been).  Works on both fast and slow timers.  Returns -1 if it fails for any reason, returns 0 otherwise.
+</P><SPAN class="FXN">KillTimer</SPAN> (timer)<BR>
+Destroys the specified timer.  Works on both fast and slow timers.  Returns -1 if it fails for any reason, returns 0 otherwise.</div>
+<P>
+<div>
+<B>Wait functions</B><BR>
+Wait functions allow other scripts to run at the same time that they're being called.  The two uses for this are to allow a script to pause for a certain amount of time before doing anything, much like a timer, without stopping the screen from updating, and to wait to receive data that takes a while to get (especially from a remote location).  The scripting language is not multithreaded.  Instead, when a wait function is called, the entire stack of the virtual machine is backed up and then restored when the function returns.  As other scripts may have run in the meantime, global variables, lists, dicts, and objects may have changed when wait functions return.  The nice thing about wait functions is that they completely abstract out event handling, so rather than initiating a request at one point and then handling the data elsewhere once the data is received, you can simply use a wait function and handle it all in one block of code.  Eventually I plan to add commands to deal with sockets directly, which will make wait functions even more useful.
+<P>
+The downside of wait functions is that they keep multiple stacks around, so increase memory usage.  They can also result in hard to detect and fix bugs if you have a lot of interdepent functions that use them.  Another issue is that if you need data from an http request to refresh the screen, you can't get it while processing the Draw event.
+<P>
+Wait functions do nothing and return null when called in response to a Draw event.  Otherwise, another Draw event could occur in the meantime, resulting in bad things.  It's generally not a good idea to call a wait function in an initialization function run either when LCD Miscellany starts or when an object is created, as the object or other uninitialized values may be accessed before it returns.
+<P>
+<SPAN class="FXN">Wait</SPAN> (milliseconds)<BR>
+Delays the script for interval time units.  The script will pause for the specified duration, and then resume running.  Milliseconds must be between 10 and 3600000, inclusive.  Returns the duration it waited, in milliseconds (null on failure, which acts like 0).  This may be either greater or less than the duration you specified.  May be significantly longer if a slow script runs in the meantime.  It's accuracy is system-dependant; I primarily depend it so you can tell if the script's running too slowly and behave appropriately.  Works just like fast timers, internally, except that it preserves the old stack.
+<P>
+<SPAN class="FXN">Sleep</SPAN> (milliseconds)<BR>
+Not really a wait function.  LCD Miscellany locks up and nothing is executed until the thread resumes.  No need to worry about other things going on in the background.  It can be called when Wait() cannot be as well.  Milliseconds should be between 10 and 60000.  It will return the length in seconds that it actually slept, according to Microsoft.  This is really intended only for very brief pauses.  If you're listening to keyboard input, Sleeping for more than a couple dozen milliseconds can cause significant input lag and keypresses may be ignored by LCD Miscellany.
+
+<P><SPAN class="FXN">HttpGetWait</SPAN> (url)<BR>
+Gets the file at the specified url. This function is intelligent enough to go through multiple servers with the same DNS if the first isn't responding or sends an invalid response.  It also handles http redirects (But not HTML redirects).  All this behavior is completely transparent to the script, though the delay may be longer if it has to do more, of course.  A future version may return extended information (mime type, return code, http version, etc).  https is not supported.  Basic authentication is supported (Use http://user:pass@domain).  This uses no encyption, so anyone who wants can steal your password (utorrent uses this method, among others.  Do try to log in anywhere that matters this way).  Note that the DNS is assumed to be in ASCII unless your operating system supports Unicode DNSes, in which case the DNS is assumed to be unicode.  XP SP2, XP64 (SP1?), and Vista all support Unicode DNSes.  Currently, the rest of the URL is assumed to be in ASCII.  Support for Unicode paths may eventually be added.<BR>
+
+<P><SPAN class="FXN">SpawnThread</SPAN> (function, object, arglist)<BR>
+If object is not an object, calls the specified function with the arguments in arglist.  Otherwise, calls the specified method of the provided object using arglist.  Note:  Arglist should be a list of arguments or null.  The difference between SpawnThread() and call() or calling a function normally is that SpawnThread() creates a new "thread".  The current thread pauses and the new one runs immediately until it is finished...or encounters a Wait function, at which point execution of the current thread resumes.  This allows functions that use Wait functions to be called in response to Draw() events, or to be called without delaying the current thread (much).  Also useful with a lot of related http requests.  Return value is 0 on failure, 1 if the new thread completed, and 2 if it entered a Wait() state.
+
+<P>SpawnThread only works with scripted functions, so you can't call HttpGetWait or a dll function directly with SpawnThread, for example.  It also won't work with aliases of functions that aren't scripted.  However, you can call a scripted function that calls a non-scripted function.  This is because stacks are only created for scripted functions, and Wait functions need a stack to work properly (And there's no reason to call SpawnThread on a non-Wait() function...It might actually work with them, but I make no guarantees, and it serves no purpose, so just don't do it).
+
+</P>Note that the scripting engine only actually has one thread, despite the name of the function.  Calling Wait() functions, however, causes behavior much like that of threads.  Suppose I should technically call them fibers instead.  May change this to make return value accessible if it completed, in a future release.  I may also allow the current thread to be set to execute after the current one is done.  Also note that there's a recursion limit on spawned threads.  If you have a spawned thread make a spawned thread that makes a spawned thread, etc, etc, you can run into a stack overflow crash unless there are a few Wait() functions in between.  This takes a lot of SpawnThreads to happen, so you're not likely to have an issue with this unless your code is buggy.
+
+</div>
+
+
+<P>
+<div>
+<B>Interface functions</B><BR>
+
+<P> <SPAN class="FXN">GetCursorPos</SPAN> ()<BR>
+Gets the position of the cursor, in screen coordinates (Upper left corner of the main monitor should be (0,0)).  Returns the list (x, y) on success, returns null on failure.<BR>
+<P> <SPAN class="FXN">SetCursorPos</SPAN> (x, y)<BR>
+Sets the position of the cursor, in screen coordinates.  Returns 0 (not null) on failure.<BR>
+<P> <SPAN class="FXN">ClipCursor</SPAN> (left, top, right, bottom)<BR>
+Traps the cursor to stay within the specified rectangle, in screen coordinates.  Passing it no arguments (Or all zeroes) will cancel any existing clip region.  Each subsequent call will cancel the previous rectangle.  This is particularly useful with games that don't lock the cursor to a monitor themselves (See EnumDisplayMonitors() below.  GetForegroundWindow()/GetWindowRect() will also serve).  Returns 0 (not null) on failure.<BR>
+
+<P> <SPAN class="FXN">ContextMenuWait</SPAN> (x, y, item1, item2, ...)<BR>
+Creates a context menu at the speicifed location with the specified items in it.  Returns -1 if no item is selected, return the index of the selected item otherwise.  Doesn't work with submenus at the moment.
+
+<P>Note:  Because of how popup menus work, when calling this function in a "thread" created with SpawnThread(), the popup window will not appear until all scripts are finished running.
+
+<P> <SPAN class="FXN">MouseMove</SPAN> (x, y, flags, data, extra)<BR>
+Simulates a mouse event using the windows API. Flags is a combination of flags.  If the 0x8000 bit is set (MOUSEEVENTF_ABSOLUTE), x and y are absolute coordinates of the cursor's new position.  Otherwise, they're coordinates relative to the cursor's old position.  Extra generally is not used, and data is not needed for standard usage.
+
+<P>You can set mouse clicks and wheel movement with other flags and by using the data parameter, but the next functions are easier to use, so I'm not going to document how here.  You can find info on Microsoft's mouse_event() API documentation if you're curious.  The only differences are that flags is their first parameter and I set the MOUSEEVENTF_MOVE flag automatically if you don't specify MOUSEEVENTF_ABSOLUTE, as the primary purpose of the function is to move the mouse.
+
+<P> <SPAN class="FXN">MouseDown</SPAN> (button)<BR>
+Simulates pressing the specified button.  1 is left, 2 is right, 3 is middle, and 4/5 are buttons 4/5.  0 (Or no parameters) is also left.  Always returns null.  Should call MouseUp at some point, in most cases.<BR>
+<P> <SPAN class="FXN">MouseUp</SPAN> (button)<BR>
+Simulates releasing the specified button.  Works just like MouseDown.<BR>
+<P> <SPAN class="FXN">MouseScroll</SPAN> (distance, wheel)<BR>
+Simulates using the mouse wheel.  If wheel is 1, simulates a horizontal wheel (May not work on older versions of windows), otherwise simulates the standard vertical one.  Distance is in terms of "clicks" of the wheel.<BR>
+
+<P> <SPAN class="FXN">GetKeyState</SPAN> (key)<BR>
+Gets the state of a key.  If the key is down, the 8th bit (128 bit) is 1, and if the key is a toggle key that's on (like capslock), the 1st bit (1 bit) is 1.  Key can be either an integer virtual key code (Have fun looking these up.  Once I add some sort of #define statement, I'll include a list) or a string.  If it's a string, only the first value is checked.  Returns null when it can't find a virtual key code for a character.
+<P> <SPAN class="FXN">KeyDown</SPAN> (key, extended)<BR>
+Simulates pressing the specified key.  Key is either a virtual key code or a string, as with GetKeyState.  Extended is 1 if it's an extended key, 0 otherwise.  Don't ask me...It's a Microsoft thing.  May make it easier to use, if/when I figure out how.  Always returns null.<BR>
+<P> <SPAN class="FXN">KeyUp</SPAN> (button)<BR>
+Simulates releasing the specified key.  Works just like KeyDown.
+
+</P><SPAN class="FXN">EnumDisplayMonitors</SPAN> (left, top, right, bottom)<BR>
+Enumerates the screen coordinates of all monitors that intersect the specified rectangle.  Return format is a list of lists, or null on failure.  If all values are 0 (Or no parameters are given), enumerates all monitors.  Each of the sublists are in the format (left, top, right, bottom).  I'm unsure of the order of returned monitors.  I believe it's by monitor coordinates, left before right, top before bottom.  I know primary monitor isn't always first, at least.  This function is listed here because it's particularly useful in conjunction with ClipCursor.  Returns null on failure or when no monitors are connected.  Note:  The function name comes from Microsoft, not me.
+</div>
+
+<P>
+<div>
+<P><B>G15 functions</B><BR>
+Note: In my experience, on my computer, the set light functions don't do anything fairly often.  No idea why this is.  I'm sending the right messages, just nothing seems to happen.  To get around this, call the set light functions twice in a row.
+
+<P> Note:  Some of these functions now apply to all display devices, including G19s and icons on the system tray.
+<P>
+<P> <SPAN class="FXN">GetG15s</SPAN> (type)<BR>
+Returns a list of G15s and similar devices on a system, by id string.  If type is 0, devices of all types are returned.  Otherwise, only devices of certain types are returned.  Valid values (Defined in constants.h) are: LCD_G11, LCD_G19, LCD_G15_V1, LCD_G15_V2, LCD_Z10, LCD_GAME_PANEL, SDK_160_43_1, SDK_320_240_32, and SYSTRAY_ICON.
+<P>
+The last two types are for devices connected through the SDK, and the others are for devices connected via HID.  Some devices may be listed twice, if found each way.
+<P> <SPAN class="FXN">G15EnableHID</SPAN> ()<BR>
+Enables HID monitoring of all special g15 keys using their USB Human Input Device interface.  Allows you to both get events for and get the (pressed/unpressed) state of all 18 G-keys, the 4 M-buttons, the 5 LCD buttons, and the light toggle key.  Without calling this function, you can only get the state of/events for the 4 standard LCD buttons.  Every call increments an internal count.  To disable HID Monitoring, every call to G15EnableHID() must have a matching call to G15DisableHID().  For information on the events see <A HREF="Events.html">events</A>.
+
+<P>Returns the aforementioned internal count, which is the number of times G15DisableHID() must be called to disable HID monitoring.  Multiple G15s should work fine.  Note:  This will probably cause LCD Miscellany to ignore LCD buttons on Z-10 speakers and possibly on G15 V2s as well.  It will continue to display on them fine as long as LCDMon is running.  <B>As an added bonus, when HID mode is enabled, LCD Miscellany can draw to G15 LCD's even when LCDMon.exe is not running.</B>
+<P> <SPAN class="FXN">G15DisableHID</SPAN> ()<BR>
+Disables HID monitoring of all special g15.  To disable HID Monitoring, every call to G15EnableHID() must have a matching call to G15DisableHID().  Returns null if HID monitoring wasn't enabled in the first place, or the aforementioned internal count, otherwise (Which can be 0).
+
+<P><SPAN class="FXN">G15GetButtonsState</SPAN> (keyboard)<BR>
+Returns, as an integer, the state of the G15's special buttons.  First bit (bit 0) is set if LCD button 1 is down, bit 1 for button 2, etc, so (G15GetLCDButtonsState()&4) would be non-zero only if the 3rd button is down.
+
+<P>Bits 4 and 5 are up and down on the new keyboards.
+
+<P>If HID is enabled, you'll get the other buttons as well (Menu navigation, M1-M3, light button, and the g-keys).  Note that these only work for G15 V1s and V2s.  Positions of these values are subject to change, so use the values defined in constants.h.
+
+<P>Keyboard is either the 1-based index of which keyboard you want the button state of or the case-insensitive HID identifier of the keyboard you want the state of.  Null or 0 result in the combined (or-ed) state of all connected G15s.  Null is returned if no such keyboard exists (Or it's been unplugged).
+
+<P>Note that it's possible for some G15s to be visible twice, once via HID and once via LCDMon.
+
+
+<!--No longer true, might be true later, though.  <P>Note that this function may not return the current state of the G15, but the state when the last processed button press/release occured.  If two buttons are pressed at once, calling G15GetButtonsState() while processing the first button down even will only indicate that the first button is down.  This behavior is a result of queuing multiple presses/releases of a button that is pressed repeatedly.-->
+<P><SPAN class="FXN">GetDeviceState</SPAN> (DeviceID)<BR>
+Works with all supported device types.
+<P> Returns a DeviceState object of the specified device.  Devices can be a device index (from 1 to number of display devices), or a device's string id (Which you get as a parameter in the draw event).  For fields not supported the device in question, null is always returned.  0 returns the state of all devices in a list.
+
+<div><PRE>struct <SPAN class="CLASS">DeviceState</SPAN> {
+    var <SPAN class="CLASS_VAR">name</SPAN>,          // Name. Unique string id of device (Systray icons may share names).
+        <SPAN class="CLASS_VAR">type</SPAN>,          // Type of device.  Same as parameter to GetG15s().
+        <SPAN class="CLASS_VAR">width</SPAN>, <SPAN class="CLASS_VAR">height</SPAN>, // dimensions.
+        <SPAN class="CLASS_VAR">bpp</SPAN>,           // Bits per pixel.  Currently 1 or 32.
+        <SPAN class="CLASS_VAR">mkeys</SPAN>,         // State of mkey lights.  Bits 0 to 3 are flags.
+                       // In order: M1, M2, M3, and MR.  1 is on, 0 is off.
+        <SPAN class="CLASS_VAR">light</SPAN>,         // State G15 backlight.  0 is off, 1 is half power, 2 is fully on.
+        <SPAN class="CLASS_VAR">LCDLight</SPAN>,      // State G15 LCD light.  0 is off, 1 is half power, 2 is fully on.
+        <SPAN class="CLASS_VAR">LCDColor</SPAN>,      // Color of backlight.  Only supports G19s.
+};</PRE></div>
+
+<P> <SPAN class="FXN">G15GetState</SPAN> (keyboard)<BR>
+Supports G15s only.
+<P>
+Gets the state of the lights on the specified keyboard.  Keyboard works as in the previous function, except a value of 0 will return the state of the first G15 HID keyboard and if it's the identifier of a non-HID attached keyboard, it returns null.  The return value is a 4-element list consisting of (Light, LCDLight, MLights, keyboard) for G15s.  For G15s, each value is the input you'd pass to the next 3 functions to set the current state of the keyboard, except for keyboard, which is the HID identifier string of the keyboard you changed the value of.  Returns null on failure.<BR>
+
+<P><SPAN class="FXN">G15SetPriority</SPAN> (value, duration, keyboard)<BR>
+Sets the priority for drawing to specified keyboard with the Logitech SDK.  Only works on SDK connections.  Priority value should be one of: LGLCD_PRIORITY_IDLE_NO_SHOW, LGLCD_PRIORITY_BACKGROUND, LGLCD_PRIORITY_NORMAL, LGLCD_PRIORITY_ALERT.
+
+<P> Duration is roughly how long, in seconds, the elevated priority will be used until its returned to normal priority.  Note that priority is a very rough estimate.  Subsequent calls for a given keyboard clear the old priority/duration completely, even if the duration is shorter.  A duration of 0 will affect only a single device update.  A duration of -1 will last until the next call to G15SetPriority() for that keyboard.  Keyboard works as in GetDeviceState(), except 0 will set the priority for all SDK connected keyboards.  Return value is the number of keyboards whose priorities were set.
+
+<P> <SPAN class="FXN">G15SetMLights</SPAN> (mask, keyboard)<BR>
+Supports G15s and G19s.
+<P>
+Sets the specified M buttons to be lit and all others to be off.  Mask is a combination of flags, 1 is lit, 0 is unlit.  1 is M1, 2is M2, 4 is M3, and 8 is MR.  Keyboard works as in the above function, except a value of 0 (Or giving no value) will set the button lights of all G15 keyboards (I assume no one is using more than one G15 on a single computer, but just in case....).  This does not affect Logitech's macros.  Returns number of keyboards with values successfully changed.<BR>
+<P> <SPAN class="FXN">G15SetLCDLight</SPAN> (value, keyboard)<BR>
+Supports G15s.
+<P>
+Sets the LCD light brightness of the specified keyboard(s).  0 means off, 1 means half brightness, and 2 means fully lit.  "Keyboard" works the same as with G15SetMLights.  Returns number of keyboards with values successfully changed.<BR>
+<P> <SPAN class="FXN">G15SetLight</SPAN> (value, keyboard)<BR>
+Supports G15s.
+<P>
+Sets the brightness of the keyboard light of the specified keyboard(s).  0 means off, 1 means half brightness, and 2 means fully lit.  "Keyboard" works the same as with G15SetMLights.  Returns number of keyboards with values successfully changed.<BR>
+
+<P> <SPAN class="FXN">G15SetBacklightColor</SPAN> (color, keyboard)<BR>
+Supports G19s, despite the name.
+<P>
+Sets the specified keyboard's backlight to the specified color.
+</P>
+<SPAN class="FXN">G15SetContrast</SPAN> (value, keyboard)<BR>
+Supports G15s.
+<P>
+Sets the contrast of the keyboard light of the specified keyboard(s).  Value must be from 0 to 26 (The cap of 26 is just to be on the safe side).  "Keyboard" works the same as with G15SetMLights.  Default value is around 22.  Returns number of keyboards with values successfully changed.
+</div>
+<P>
+<div>
+<B>Math functions</B><BR>
+<SPAN class="FXN">cos</SPAN> (value)<BR>
+<SPAN class="FXN">sin</SPAN> (value)<BR>
+<SPAN class="FXN">tan</SPAN> (value)<BR>
+<SPAN class="FXN">acos</SPAN> (value)<BR>
+<SPAN class="FXN">asin</SPAN> (value)<BR>
+<SPAN class="FXN">atan</SPAN> (value)<BR>
+<SPAN class="FXN">log</SPAN> (value)<BR>
+<SPAN class="FXN">log10</SPAN> (value)<BR>
+<SPAN class="FXN">exp</SPAN> (value)<BR>
+<SPAN class="FXN">sqrt</SPAN> (value)<BR>
+<SPAN class="FXN">pow</SPAN> (value1, value2)<BR>
+Map directly to the C functions of the same name.  Arguments are converted to floating point as needed, and the return value is a floating point number.
+<P><SPAN class="FXN">abs</SPAN> (value)<BR>
+Absolute value.  Works for floating points and ints, converts strings as needed.
+</P><SPAN class="FXN">rand</SPAN> (min, max)<BR>
+<SPAN class="FXN">randf</SPAN> (min, max)<BR>
+Generates a pseudo-random value between min and max.  rand() generates integers, and can generate both min and max.  randf() generates floats between min and max, and has only a very small probability of generating either min or max exactly.  If max < min, they are flipped.  Random number should be fine for most non-cryptographic uses.  Currently no way to set the seed.
+</div>
+<BR>
+
+<div>
+<P><B>Audio Mixer functions</B><BR>
+More functions may be added if there's any demand for them.  These are currently only aimed at reading and setting the mute and per-channel volume settings of all installed audio devices.  Device types can be found in Microsoft's mmsystem.h.
+
+<P><SPAN class="FXN">GetNumAudioDevices</SPAN> ()<BR>
+Returns the number of audio mixer devices installed on a system.
+
+<P><SPAN class="FXN">GetAudioValue</SPAN> (device, destination, source, control, single)<BR>
+Gets a numeric value for the specified control.  Device is a 0-based mixer device index.  Destination is either a 0-based destination line index or a negative destination line type.  Src is 0, for a destination line control, a 1-based source line index for the specified destination line, or the negative of a source line type identifier.  Control is either a 0-based index or a negative control type identifier.  Single is 0 if you want a list of the values for all channels, and 1 if you want a single value instead (What you get with multiple channels with different values is not my decision).
+
+<P>Returns an int or list of ints on success, returns null on failure.  Won't work with controls that don't have integer or boolean values..
+
+<P><SPAN class="FXN">SetAudioValue</SPAN> (device, destination, source, control, value)<BR>
+Works just like the above function, except value is the value you want to set the control to.  Value must be an integer.  Currently does not support setting the value for each channel individually.  If anyone asks for it, I'll add that in a future release.
+
+<P>Returns an 1 on success, null on failure.
+
+<P><SPAN class="FXN">GetAudioString</SPAN> (device, destination, source, control)<BR>
+Returns the name of the specified audio thing.  To get the name of a device, only pass one argument (Don't pass in any extra null arguments).  To get the name of a destination line, only pass 2, etc.  Values are as with GetAudioValue(), except it does not currently work with negative values.  Returns null on failure.  Note that source 0 isn't really a source so it has no type.  Therefore, it will fail when source is 0 unless a control is specified.
+
+</P><SPAN class="FXN">GetAudioType</SPAN> (device, destination, source, control)<BR>
+Just like above, except returns the dwComponentType of destination and source lines, and returns the dwControlType of controls.  Fails when only given a devices, as devices themselves have no types.
+
+</div>
+
+<BR>
+<div>
+<P><B>File/Directory functions</B><BR>
+Note that currently a file can be open either of reading or writing, but not both.
+<P><SPAN class="FXN">CopyFile</SPAN> (source, dest)<BR>
+Copies file from source to dest.  Will not overwrite existing files, should recursively copy directories.  Returns 1 on success, 0 or null on failure.
+<P><SPAN class="FXN">MoveFile</SPAN> (source, dest)<BR>
+Moves file from source to dest.  Will not overwrite existing files, should recursively move directories.  Returns 1 on success, 0 or null on failure.
+<P><SPAN class="FXN">DeleteFile</SPAN> (file)<BR>
+Deletes the specified file.  Will also remove empty directories.  Will not delete read only files or non-empty directories.
+<div><SPAN class="FXN">FileInfo</SPAN> (path, mask, flags)<BR>
+Returns a list of <SPAN class="CLASS">FileInfo</SPAN> structures for all files/directories matching path.  Path must match the files exactly, but can contain wild cards in the file name, so for the contents of your C: drive, you'd use GetFileInfo("C:/*").  Returned files are sorted in an order that should closely match Window's sort order.  Note that the parent directory ("..") will be included when appropriate but the current directory (".") will not.
+
+<P>Mask and flags are used to restrict the attributes of the files returned.  Mask indicates which attributes matter, and flags indicate which of those attributes must be set.  See the msdn WIN32_FIND_DATA documentation for attribute values.
+<P><PRE>struct <SPAN class="CLASS">FileInfo</SPAN> {
+    var <SPAN class="CLASS_VAR">name</SPAN>,       // Name. Doesn't include path.
+        <SPAN class="CLASS_VAR">bytes</SPAN>,      // Size. Not size because size is reserved. Oops.
+        <SPAN class="CLASS_VAR">attributes</SPAN>, // Attribute flags.
+        <SPAN class="CLASS_VAR">created</SPAN>,    // Creation time, as a float, in terms of seconds since 1970 (like Time()).
+        <SPAN class="CLASS_VAR">modified</SPAN>;   // Modification time, same format.
+    function <SPAN class="FXN">FileInfo</SPAN> (path, mask, flags) // See above.
+};</PRE></div>
+
+<P><SPAN class="FXN">DriveList</SPAN> ()<BR>
+Returns a list of the names of drives installed on a system.  Format is "C:\".
+
+<div><B>FileReader</B><BR>
+The FileReader handles reading from files.
+
+
+<P><pre>
+struct <SPAN class="CLASS">FileReader</SPAN> {
+     function <SPAN class="FXN">FileReader</SPAN> (file, mode);
+     function <SPAN class="FXN">Read</SPAN> (bytes);
+};
+</pre>
+
+<P><SPAN class="FXN">FileReader</SPAN> (file, mode)<BR>
+Opens the file "file" for reading and creates a file reader object.  Returns null on failure.
+
+<P>If mode is READER_NORMAL, the file is read directly with no string processing of any sort.  Note that most string functions assume the string is UTF8 rather than ASCII, so this may cause issues with ASCII files that use high ASCII.
+
+<P>If mode is READER_UNCOMPRESS, the file is treated just like with READER_NORMAL, except files compressed with gzip and compress will be recognized and automatically uncompressed.  If the specified file isn't found, it will also search for "path".Z and "path".gz.
+
+<P>If mode is READER_CONVERT_TEXT, the file is uncompressed as with READER_UNCOMPRESS, but the file is also converted to UTF8 as it's read.  UTF8 and UTF16 byte order marks are recognized.  If there's no byte-order mark at the start (And no null, implying the file is a UTF16 file without one), then the file is assumed to be ASCII.  Note that in this mode line breaks of all 3 types (CR, CRLF, and LF) will all be replaced Linx-style line breaks (LF).
+
+<P><SPAN class="FXN">FileReader.Read</SPAN> (bytes)<BR>
+Reads the specified number of bytes/characters from a file reader object and returns them as a string.  For files openned with READER_TEXT_CONVERT, bytes is actually the number of UTF8 characters to read from the file.  Otherwise, it's the number of bytes.  Strings will be truncated so as not to extend beyond the end of the file.  If at the end of a file, or if there's some other failure, null will be returned.
+
+<P>In READER_TEXT_CONVERT mode, may return slightly more characters than requested if a unicode character crosses a byte boundary.  Also, if bytes is -1, will read until the end of the line and skip the terminal line break.  Again, this is only in READER_TEXT_CONVERT mode.
+</div>
+
+<P><div><pre>
+struct <SPAN class="CLASS">FileWriter</SPAN> {
+     function <SPAN class="FXN">FileWriter</SPAN> (file, mode);
+     function <SPAN class="FXN">Write</SPAN> (string);
+};
+</pre>
+
+<P>function <SPAN class="FXN">FileWriter</SPAN> (file, mode)<BR>
+Opens the file "file" for writing and creates a file reader object.  Returns null on failure.  Mode is a combination of flags indicating how to write to the file.
+
+<P>If mode is WRITER_RAW or 0, the file is written to directly with no string processing of any sort.  Note that most string functions assume the string is UTF8 rather than ASCII, so this may cause issues with ASCII text viewers.
+
+<P>If mode is WRITER_ASCII, string is treated as a UTF8 strings and is converted to the Windows-1252 character set as it's written to the file.  Character set is just ASCII, plus some characters for high-ASCII.
+
+<P>If mode is WRITER_UTF8, file is written to directly, just like WRITER_RAW, except a UTF8 BOM (Byte-order-mark) is written to the start of the file.
+
+<P>If mode includes the WRITER_APPEND flag, the file is appended to instead of being completely overwritten.  Note that WRITER_APPEND | WRITER_UTF8 will only write the BOM bytes if the file didn't exist in the first place.  Otherwise, even if the file contains 0 bytes, the BOM mark will not be written.
+
+</P>function <SPAN class="FXN">FileWriter.Write</SPAN> (string)<BR>
+Writes the specified string to the file.  Returns null on failure (Even if some bytes were written successfully), and some non-zero number on success.
+</div></div>
+
+
+
+<BR>
+<div>
+<P><B>System tray icons functions</B><BR>
+System tray icons can be created and drawn to much like LCDs.  Passes messages on double-clicks and right-clicks.
+<P>function <SPAN class="FXN">NeedRedrawIcons</SPAN> ()<BR>
+Works exactly like NeedRedraw(), except queues redraw of all system tray icons.
+<div>
+<PRE>struct <SPAN class="CLASS">SysTrayIcon</SPAN> {
+    function <SPAN class="FXN">SysTrayIcon</SPAN> (name, EventHandlerFunction, object);
+    function <SPAN class="FXN">NeedRedraw</SPAN> ();
+    function <SPAN class="FXN">Destroy</SPAN> ();
+};</PRE>
+
+<P>function <SPAN class="FXN">SysTrayIcon</SPAN> (name, EventHandlerFunction, object)<BR>
+Creates a system tray icon.  Name is the tool tip text displayed when the cursor hovers over the icon.  EventHandlerFunction is a string containing the name of the function that handles all events relating to the icon.  Object is the object the function belongs to.  Can be null for global functions.  Returns a SysTrayIcon object on success, null on failure (Function doesn't exist).
+
+<P>function <SPAN class="FXN">NeedRedraw</SPAN> ()<BR>
+Queues a redraw for the specified tray icon only.
+
+<P>function <SPAN class="FXN">Destroy</SPAN> ()<BR>
+Destroys the icon associated with the SysTrayIcon object.  The SysTrayIcon object will continue to exist, but will respond to know events.  There is no way to check if an  SysTrayIcon object is in this state.  Only way to start drawing the icon again is to create a new SysTrayIcon object.
+</div>
+
+<P>function <SPAN class="FXN">EventHandlerFunction</SPAN> ($event, $reserved, $sysTrayIcon, $arg2)<BR>
+Template of the EventHandlerFunction used by SysTrayIcons, not an actual function.  Works just like standard event handlers, except all events are passed to the same one function.    $sysTrayIcon is the SysTrayIcon object.
+
+<P><B>Event List:</B><BR>
+
+<P>function <SPAN class="FXN">EventHandlerFunction</SPAN> ("DrawIcon", $reserved, $sysTrayIcon, $res)<BR>
+Much like "Draw" event. $res is the resolution.  Currently always draw 32-bit icons only.
+
+</P>function <SPAN class="FXN">EventHandlerFunction</SPAN> ("WindowsMessage", $reserved, $sysTrayIcon, $lParam)<BR>
+Sent whenever a Windows message event occurs related to the icon. $lParam is the second parameter sent by Windows for icon events, which is a message id.
+
+
+</div>
+
+
+
+<BR>
+<div>
+<P><B>Other functions</B><BR>
+<P>
+<SPAN class="FXN">GetClipboardData</SPAN> (format, alignment)<BR>
+Gets the current data in the format.  Returns a list (format, value), where format is the Windows clipboard data type and value is the parsed value (currently either a string or an Image32).
+
+<P>Null is returned if the clipboard couldn't be openned, and -1 is returned if the clipboard data supports no recognized format (Or the requested format).
+
+<P>If format is 0, alignment is ignored, and the program will search for any recognized format in the clipboard and return it.  Strings will be converted to UTF8, images will be converted to Image32s.  If format is non-zero, only cipboard data in that format will be read.  If data in that format is not available, -1 will be returned.
+
+<P>If alignment is 1, 2, or 4, LCD Miscellany will read up to the first alignment-byte 0 that is alignment-aligned, and create a string containing the raw data in the clipboard up to that point.  If it's -1, the entire clipboard will be returned directly as a string (Note that a lot of applications allocate more data for the clipboard than is used, for a number of reasons).  If alignment's 0, and the format is recognized by LCD Miscellany, it will be read as discussed in the previous paragraph.  Otherwise, it will behave as if alignment was set to 1.
+
+<P>When format or alignment is 0, images will return Image32s, CF_UNICODETEXT will be converted to a UTF8 string, and CF_HDROP will be converted to a string containing a bunch of file names (each will be preceeded by a space and all except the last followed by "|r|n".  This makes for easy display of lists.  May make another option for CF_HDROP if there ever seems a need to do so.
+
+<P><SPAN class="FXN">SetClipboardData</SPAN> (data, format)<BR>
+Sets the current clipboard format to data, using format if specified, or automatically picking a format.  Currently only supports CF_UNICODETEXT.  May well add CF_HDROP support.  Not sure if there's any need for any other formats, like images.  If anyone asks, I'll probably add it.
+
+<P><SPAN class="FXN">SetLocale</SPAN> (language, sublanguage, sort)<BR>
+Sets LCD Miscellany's language id.  Has no effect on any other process or system settings.  Affects day/month text and (possibly) order of strings returned by a few functions, though not normal string comparisons, which use strict lexical order.  Reason for the latter is there is no Microsoft UTF8 sort function, so I'd have to convert everything to UTF16 first, otherwise.  Language and sublanguage values can be found at http://msdn.microsoft.com/en-us/library/ms776294(VS.85).aspx.  Note that not all combinations are installed by default on all windows installs.  Sort order can be 0 for default.
+
+<P><SPAN class="FXN">ParseXML</SPAN> (string)<BR>
+I strongly recommend you use RegExp() instead of these XML functions.  Dealing directly with XML's hierarchy, multiple ways of handling values, random mixing of text and tags, inability to simply distinguish between values that are part of a list and values that only occur once per tag, inconcistent handling of whitespace, and just plain nastiness is much more complicated than coming up with a regular expression to grab what you want from an XML document.
+<P>
+Attempts to parse a string containing XML into a more useful structure.  Supports UTF8 and UTF16 encoding.
+<P>
+For each element, I create a list.  Each pair of adjacent values in the list are related.  The even values are the element names, and the odd values are the lists for the elements of that name.  The first value of each list is null, and the second contains a list containing all the attributes of the element in the same format, except that it contains strings instead of lists.  Characters that directly appear in an element appear directly as strings, and are treated as if their element name is null.
+<P>
+The function returns null on complete failure, but if it is able to parse any of the data from the XML file, it will return the partially parsed output.  This is not a conforming XML parser.  It's meant to work on all (simple) documents, easily, and without having to track down missing element definitions.
+<P>
+<SPAN class="FXN">FindNextXML</SPAN> (list, string, first)<BR>
+XML convenience function.  Give it a string and it will find the index of the first even numbered value in the list with that value, starting at first.  Returns -1 on failure.  Pass an empty string to find text not enclosed in tags.<BR>
+
+<P> <SPAN class="FXN">StartScreenSaver</SPAN> ()<BR>
+Starts the screen saver.
+
+<P> <SPAN class="FXN">MonitorPower</SPAN> (param)<BR>
+When param is 2, turns off the monitor.  When it's 1, monitor enters low power mode.  When it's -1, turns the monitor on.  Acts like screensaver:  Moving mouse turns monitor back on.  Don't ask me the exact difference between 1 and 2.
+
+</P> <SPAN class="FXN">Quit</SPAN> ()<BR>
+Quits the program.  Note that it does not quit instantly, so the current script will continue running and other events may be processed even after the current script is finished.  May (Or may not) change this behavior in future versions, so do not rely on it.  A Quit event will always be triggered last.
+</div>
+
+<BR>
+
+<div>
+<B>Time codes<BR></B>
+
+For most time codes, two letters indicate to always use 2 characters.  If the second character is capitalized, the leading character will be a 0 for values less than 10.  Otherwise it will be a space.
+
+<P><B>h/hh</B> indicates the current hour.  Capitalizing the first H results in a number from 0 to 23, lowercase gives a number from 1 to 12.
+
+<P><B>n/nn</B> indicates the current minute.  The first letter is case insensitive.
+
+<P><B>s/ss</B> indicates the current second.  The first letter is case insensitive.
+
+<P><B>t/tt</B> indicates am/pm.  The one letter code leaves off the M, and capitalizing the first indicates capital/lowercase.
+
+<P><B>d/dd</B> indicates the current day of the month.  The first letter is case insensitive.
+
+<P><B>ddd/dddd</B> indicates the day of the week.  The 3 letter code results in the 3 letter version, while the 4 results in the full version.  Using caps indicates to use all caps for the name, lowercase indicates to only capitalize the first letter.
+
+<P><B>m/mm/mmm/mmmm</B> indicates the current month.  The first letter is case insensitive.
+
+<P><B>mmm/mmmm</B> indicates the month.  The 3 letter code results in the 3 letter abbreviation, while the 4 letter one results in the full name.  Using caps indicates to use all caps for the name, lowercase indicates to only capitalize the first letter.
+
+</P><B>y/yy/yyyy</B> indicates the current year.  The first two versions give 2 digits and the last gives 4.
+
+</div>
+<BR>
+<div>
+<B>Time zone codes<BR></B>
+
+<P>If the time zone is less than 5 characters long and the 4th character (if there is one) is not a number, it's checked against a hard coded internal time zone table.  If the string is not found in the table, local time is given.  As I put together this list myself, there may well bugs in it0.  Tell me if you find any bugs or want me to add any.  Also, I have since discovered my source list was not geographically neutral, so some hard coded values may well be obscure time zones which share the abbreviations of more common ones.  The names are the traditional codes (CST, MST, EST, GMT, etc), and some include daylist savings time, others don't.  The daylight savings abbreviations (CDT, MDT, EDT) are not included.  There are about 70 hard-coded zones.  CST and EST are both the US versions.
+
+</P> Otherwise, the time zone is assumed to be in Windows's time zone format, and sent directly to Microsoft's time zone function.  The format is: code[- | +]h[:mm[:ss]][dst code].  Both codes must be exactly 3 characters (And the characters don't matter, as there's currently no way to access them from a script).  If there is no dst code, dst adjustments are not done.  A positive h value signifies a time numerically before GMT (When noon GMT, before noon in the time zone).  So EST, is "EST5EDT".  If a time zone is not in a valid format, GMT is given.
+
+</div>
+
+</BODY>
+</HTML>

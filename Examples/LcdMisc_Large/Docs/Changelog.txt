@@ -1,0 +1,1620 @@
+Dll changes:
+
+* Added a new way of calling dlls.  Makes using dlls a lot simpler, and allows you to call some native windows functions directly (Namely, those that take less than 11 arguments and don't modify the values pointed to by any of their parameters.  Calling those that require funky data structures might not be possible, either).
+
+* Added sample dll using the new format.
+
+* Fixed crash when specifying a dll function with empty argument type list when using the old format.
+
+* Fixed dll search path bugs.
+
+
+Bug Fixes:
+
+* Fixed a sign bug in gif loading code.  Would cause bad things to happen when loading gifs.
+
+
+Added Functions:
+
+* GetHDC()
+
+* GetScriptWindow()
+
+* Added partial UDP support (Still undocumented, as is TCP/IP support).
+
+* NvAPI_GPU_GetTachReading() gets speeds of nVidia graphics card fans.  Note: Function says my 8800 GT doesn't support this, so I'm not sure how many cards this will actually work on.
+
+
+Modified Functions:
+
+* ColorLine() can now draw connected lines when passed multiple points.
+
+* NvAPI_GPU_GetThermalSettings() now returns null entries for cards that return no values, so array order matches NvAPI_GPU_GetTachReading().
+
+
+Modified Scripts:
+
+* Header on G19s now includes space for an icon.
+
+* Weather view script has G19 support, including visualization.
+
+* Media player script has G19 support, including visualization.
+
+* Winamp script now uses UDP, making it a bit more responsive.
+
+* Both winamp dlls updated, number of redraw messages significantly reduced.  Old visualization one won't work, so will need to update the dll.
+
+* GameStatus.c now displays nVidia fan speed instead of VRAM usage, if it can get it, which it probably can't.
+
+
+
+0.4.4.1
+
+Bug Fixes:
+
+* Major memory leak when drawing text with Windows fonts fixed.  Default scripts only used them with G19s.
+
+* Minor memory leak with systray descriptions fixed.
+
+* PNG red and blue channels should no longer be swapped.
+
+
+Added Functions:
+
+* G15SetBacklightColor() sets a G19's backlight color, despite the name.
+
+* GetDeviceState() added.
+
+
+Modified Functions:
+
+* G15SetMLights() now works for G19s as well as G15s.
+
+* RGB() and RGBA() are replaced with constant values when all 3 or 4 parameters are constant integers.  Null values not handled by this minor speed optimization.
+
+
+Fixed Functions:
+
+* ContextMenuWait()'s popup menu will now always disappear as it should when it's unfocused.
+
+* ContextMenuWait() now works with "threads" created by SpawnThread().  Used to lock up both child and parent threads.
+
+* Sleep() is no longer called as a wait function.  Not sure if this bug broke anything before.
+
+
+
+0.4.4.0
+
+Added Functions:
+
+* ColorRect() and ColorLine().  Makes setting the background/foreground color to draw rectangles/lines unnecessary, though old code still works fine.
+
+* NeedRedrawIcons().
+
+* ContextMenuWait().
+
+
+Added Classes:
+
+* SysTrayIcon class added.  Currently only has Destroy() and NeedRedraw() methods.
+
+
+Fixed Functions:
+
+* FormatText() and all DrawText() functions now use tab lengths that match what Windows used, which look to be about 4 times longer than before.
+
+* DrawText() now draws ampersands properly when using high-res fonts.
+
+* Alpha value now adds transparency when drawing rectangles, lines, and 1-bit images (Worked in previous 2 versions for drawing 4- and 2-channel images).
+
+
+Modified Scripts:
+
+* Task Manger, RSS column background coloring added.  Colors are in LCDMisc Script.c.
+
+* RSS viewer updated and now supports G19.
+
+* Can now use arrow keys and LCD buttons left and right to navigate the uTorrent screen.  Button 3 pauses/unpauses a torrent.  If I ever get around to adding a detail display to the uTorrent screen, may change behaviors.
+
+* Itunes dll will no longer crash when a track has no author.  Also Itunes should no longer prompt on quit when LCD Misc is running...hopefully.  Apple has no docs on this.
+
+* DualView added, may add more functionality later.
+
+* G19Status added to test DualView.  Not complete.
+
+* DrawHeader() can now take the dimensions of the screen.  If given, will draw a high res header on G19s.
+
+* DrawMultiGraph() optimized slightly, background color changed.
+
+
+
+
+Changed in 0.4.3.5
+
+* 4wd's SABnzbdView script updated to 0.1.7
+
+
+Added Functions:
+
+* DrawClippedText() works like Window's DrawText, but only one flag currently supported.
+
+* ParseBinaryInts() added for speed.
+
+
+Modified Functions:
+
+* Font() now takes an extra parameter, which indicates if Windows drawing should be used to draw anti-aliased text.  Also, interpretation of bold parameter changed.
+
+* GetUpstream() and GetDownstream() modified, may reduce issues with doubling bandwidth.  Or may make them worse.  Also will no longer add in non-ethernet transfers.
+
+* GetAllUp() and GetAllDown() no longer filter the list, so they will now return the duplicate devices that I was filtering out before as well as loopback devices.
+
+
+Bug Fixes:
+
+* Fixed a bug that could, at least in the 64-bit build, mess up the internal font.
+
+* Fixed a bug that would cause fonts to occasioanlly switch to bold when it takes up multiple lines, and part of one line goes off to the right of the screen.  Only affected clipboard view when using a G15 and G19, I believe.
+
+* Fixed a crash when turning on/off a G15's lights and G15EnableHID() had not been called.
+
+* Vista will now receive audio change events just like XP.  Note that if you're running the 32-bit exe in XP compatibility mode, you'll receive two notifications, though should still work fine.
+
+* Fixed drawing clipping bug that could cause bad things to happen.  Not sure if it was in 0.4.3.4 or added with the new text drawing code.
+
+* Fixed socket close memory bug that could cause bad things to happen.
+
+
+Changed Scripts:
+
+* Winamp visualization plugin added.
+
+* Winamp volume changes faster and works a little better.
+
+* Bug with Winamp position display when playing stopped and running the 64-bit exe fixed.
+
+* VLC/Winamp mute fixed.
+
+* VLC volume no longer wraps from 100 to 0.
+
+* Hard drive script should now display more than 4 drives, using 2 columns per row.
+
+
+
+Changed in 0.4.3.4
+
+Added functions:
+
+* NvAPI_GPU_GetThermalSettings().  Works a bit like NvCplThermalSettings(), except it returns more data, requires less memory usage, doesn't require the nVidia control panel, and works with the 32-bit exe under 64-bit systems (And also 32 on 32 and 64 on 64).
+
+* CleanupDdraw().  See below for info.
+
+* GetVistaMasterVolume().
+
+* SetBgColor(), SetDrawColor(), RGB(), RGBA()
+
+* XorRect() added, for simpler cursor drawing.
+
+
+Miscellaneous:
+
+* GetG15s() now works with G15s connected through Logitech's SDK
+
+* All rendering now done in 32-bits.  Uses a bit more memory, but not that bad.
+
+* Can now display different images on different screens.  Note that if you have multiple LCDs, CPU usage will increase a bit.
+
+* DrawImage() now works for 8, 16, 24, and 32 bit images in addition to 1 bit ones.
+
+* UseFont() sets font for the active screen.  When there is none, a dumm screen is used so you can still get font sizes.
+
+* GetVram() no longer repeatedly recreates DirectDraw object.  Instead, the DirectDraw object is kept around between calls.  As a result, GameStatus screen is much faster, but memory usage increases significantly until CleanupDdraw() is called.
+
+* Stripped CRT from both iTunes dlls, saving about 100k total.
+
+* Supports G19 and color drawing.  Will use 3.01 drivers if present, but can still use old drivers as well, so don't have to update to use it.
+
+* G15 functions that take a keyboard name/index or return a list of keyboards now work with keyboards connected via the SDK, too.  As a result, some keyboards may be listed with two different ids.
+
+* G15 button ids changed, to make room for up/down buttons.  Constants for each button now defined in constants.h.
+
+
+Script changes:
+
+* GameStatus.c now uses NvAPI_GPU_GetThermalSettings() instead of NvCplThermalSettings().  It'll display two temps if it gets them.  If you have two GPUs, the temps will be the temps of the two GPUs.  If you have one GPU, first will (probably) be the core temp, and the second the ambient/board temp.
+
+* GameStatus.c also uses CleanupDdraw().
+
+* TaskManager, Clipboard Viewer, uTorrent screen, and Calculator now support the G19 as well as dual G15/G19 displays.
+
+* Added some font and color initialization to LCDMisc Script.c, so people can play with those without modifying the individual scripts.  As a result, root script file must be updated.
+
+* Capslock disable script improved slightly.  Not quite as good at getting the capslock light off, but shouldn't mess up actually typing results.
+
+
+
+Changed in 0.4.3.3
+
+Added functions:
+
+* EnumChildWindows()
+
+* FormatTime() should now use your locale settings for month and day of week strings.
+
+* SetLocale().  Affects day/month text, and directory sort order (Not direct string comparisons, however).
+
+* Fixed G15SetContrast().
+
+
+Bug Fixes:
+
+* Bug when trying to read performance counters when they're disabled fixed.
+
+* Crash when attempting to display character not in current font fixed.  Added in last release character 2->bold change.
+
+* Related pair of fixes for the internal font.
+
+* When converting floats to strings, if the last character is a decimal, it's removed.
+
+* ORs no longer treated as XORs.
+
+* A couple more performance counter types should work.  Tell me if you notice one particular counter giving incorrect information.
+
+
+Script changes:
+
+* Several improvements to IRC script.  Keeps track of last used nick, for use when connecting to a new server.  Displays your own nick changes on server window in addition to chat windows.  Won't let you close the root IRC window.  "/calc expression" works just like the calculator, and echos the result locally.
+
+* Task Manager screen now lets you expand apps to display their visible top level windows and close them.  May cause issues if you try to close windows that aren't meant to be closed.
+
+* Escape will now unfocus (And release input for) all views with text editors (Chat, calculator, and the text editor itself).
+
+* Menu at the bottom (In framework.c) will now scroll when more than 12 items.
+
+
+
+Changed in 0.4.3.2
+
+Miscellaneous:
+
+* strreplace() behavior when start is greater than 0 and end is 0 changed.  Now searches to the end of the string.
+
+* Character 2 (Not ASCII "2", but the byte 2 - "|2") in the middle of a string now toggles between bold and non-bold in the middle of text.  Only works when currently active font was not created as a bold font.  This is now supported by all text drawing and formatting functions.
+
+* Slight changes to FormatText().  1 pixel border on the right removed, word break on more characters.
+
+* cFosSpeed network drivers ignored when reporting bandwidth usage.
+
+
+New Functions:
+
+* IpAddr.GetDNSWait()
+
+* ToUpper(), ToLower()
+
+* MoveFile(), CopyFile(), DeleteFile().  For safety, DeleteFile() is not recursive.
+
+* Basic TCP client functions added (ConnectWait(), Socket.Send(), Socket.Read()), they're event-based, and each socket can have its own function to call on an event.  Currently not documented, as I'm thinking of adding an alternative wait-based method alternative to the event-based stuff, so HttpGetWait could be implemented as a script.
+
+* DDE function added.  Not documented due to incredible slowness.  May look into making a faster version, if it's possible, may not.
+
+
+Bug Fixes:
+
+* Improved support for non-US keyboard layouts and my keyboard event code.  Unfortunately, the default fonts do not include a lot of non-US characters.
+
+* IpAddrWait() now always acts as a wait function, even with numeric ips.  Only noticeable difference is marginally more CPU usage, and LCD Miscellany will no longer lock up for a few seconds when given odd arguments (Like "2").
+
+* FormatText() buggy handling of 1-character "words" fixed.
+
+* FormatTime() will no longer always display 24-hour time when hour does not appear at the start of the string.
+
+* strreplace() memory leak fixed.
+
+
+Modified Scripts:
+
+* IRC script added.  Supports multiple servers, channel messages, and user-to-user messages.  Strips character codes, other than bold toggles, which it supports.  Does not support CTCP (Including DCC), other than ACTION.
+
+* SpeedFan script fixed (again), sample status screen using it added.  Useful for finding out which number is what..
+
+* A lot of Pidgin screen fixes and minor enhancements.  Don't indend to do more with it, due to (web) Pidgin's memory leak.
+
+* Pidgin screen flags conversations with new text.  "/me" messages transformed to be displayed a bit better.  Conversations where no users can be found displayed in "Other Connections" section.
+
+* UTF8 support of line editor improved (Navigation and deleting characters work as expected).  Affects the calculator screen and, more importantly, the chat screens.
+
+* Keyboard lights script should no longer flicker the lights on and then off when switching from screen saver to monitor off mode under Vista.  Note that there's now a 5-second delay before the lights turn back on when coming out of screen saver mode.
+
+* ITunes screen added to media control.  Unlike other media players, pressing play when it's focused will start ITunes if it's not already running.
+
+* Added a DDE-based AMIP plugin.  It's slower'n molasses and uses more CPU time than any other screen.  Hadn't realized DDE was so slow.
+
+
+
+Changed in 0.4.3.1
+
+Bug Fixes:
+
+* GetDiskSmartInfo() now works with drive names in the form "C:\".  Only "C:" would work before, due to a bug.
+
+* Not sure if this is a bug fix or a hack, but GetDiskSmartInfo() now returns more values from drives that lie about how many values they filled out (Like Seagates).  Might jsut be that I'm incorrect about the field that I thought was a count of returned values.
+
+* FormatText() was using a width 1 shorter than it was supposed to.  Bug fixed.
+
+* Bug fixed with second parameter of GetWindowModuleFileName().  Function also now works under w2k, XP, and Vista, where Microsoft's GetWindowModuleFileName() function doesn't work.
+
+
+Miscellaneous:
+
+* List of network device names now written to log.
+
+* GetProcessFileName() added, to round out window/process functions.
+
+* Alert window now pops up on compiler errors and warnings.  Currently no way to disable it on warnings.  May add later, though should be able to easily get rid of all warnings that don't break scripts.
+
+
+Scripts:
+
+* Task Manager screen now steals arrow keys, page up/down, and all standard keys (Except 7-0).  Using keys other than the numbers jumps around to the next item that starts with those letters, just like in explorer, except pressing a letter twice looks for things that start with two of that letter instead of jumping to the second item that starts with that letter.
+
+* Confirmation dialog now blocks keyboard input if it's being displayed on top of a page that's currently stealing input.  If the arrow keys and return are being stolen, they can be used to navigate the dialog as well.  Currently only affects the task manager screen.
+
+* HDD info display in Status screens completely redone.  Will detect and display info from 1 to 4 HDDs.  Temps will only be displayed for 1-2 drives.  Temps will also be displayed for some drives that it wasn't displayed before.
+
+* Added CounterManager, which updates all displayed graphs at a constant rate, even when no status screen is visible.  All status views now use the same object.  May extend it to include long term counters later.
+
+* uTorrent screen new reports when can't connect to uTorrent and when no torrents are running.
+
+* Pidgin screen added, supporting infrastructure scripts upgraded slightly.
+
+
+
+Changed in 0.4.3.0
+
+Compatibility fixes:
+
+* Doubling of reported bandwidth usage under Vista fixed.  Caused by Vista QoS stuff pretending to be a network interface (With no special flags set) with same used bandwidth as the associated NIC.
+
+* Fixed reported volume with funky audio drivers (Don't think it's a Vista-only problem, not sure, though).  Problem was that MS's drivers make only one destination line for speakers, while fancy drivers make one destination line per physical port connected.  Those set to line out, but with no physical speakers connected report no volume value.  Was just finding the first speaker destination line, which could have been one of those.  Note:  Still have to use XP compatibility mode in Vista.  Modified both Status.c files and added utils\audio.c to take care of this.
+
+* Switched to yet another method of calculating pings.  Creates a new thread, so may use slightly more system resources, though not much.  On the plus side, it should be more accurate and cross-platform compatible.
+
+* Created a version info screen, so the description will appear in Vista's task manager.  No promises about keeping its version number up to date, however.
+
+
+Bug Fixes:
+
+* Dividing two integers is no longer replaced by their product in the optimization phase. Thanks to linFox for bringing it to my attention.
+
+* Creating new events at runtime could theoretically cause crashes, particularly in combination with wait functions.  No real reason to do it yet, but issue should be fixed.
+
+* Stack leak fixed.
+
+
+Miscellaneous:
+
+* +=s and +=S added (Do the same thing, just like +s and +S).
+
+* Some internal scripting language opcodes made more flexible.  Reduces memory usage slightly, but more importantly, may speed up scripts slightly, particularly arithmetic-heavy ones.
+
+* "unknown1" in dictionary returned by GetFrapsData() renamed to "renderer" (Thanks, linFox).
+
+* XML parser a little more picky.
+
+* Warning now logged when Windows returns the wrong font.  Primarilly caused by not installing included fonts.  Note that some fonts have two names, and I only know how to get/check one, so some warnings may not be accurate.
+
+* GetLocalIP() and GetLocalDNS() now favor IP v4 ips/DNSes.
+
+* ScreenSaver event specs modified slightly.
+
+
+Added functions:
+
+* VolumeInformation().
+
+* GetAudioType(), GetAudioString().  First is needed for the audio fix above.
+
+* JSONdecode().
+
+* SystemState().
+
+* Documentation added for Bencode() and friends.  Not sure why they weren't documented.  Possibly because they haven't been debugged, and I used to be more careful about such things.
+
+
+Changed scripts:
+
+* When going through previous values in calculator screen, cursor will now always appear at the end.  Change made to LineEditor.c.
+
+* Weather view no longer displays a dark box with a dash in it for non-existant weather forecasts.
+
+* File browser now displays volume names.
+
+* Improved unicode support in text editor.
+
+* File browser now handles all saving/loading of last used path itself instead of the text editor.  Also saves last selected file.
+
+* Text editor displays file names when moving between files open for editing.
+
+* Calculator now always uses floating point.
+
+* uTorrent view now uses JSONdecode().  Thought MPC used JSON, too, but sadly it does not.  Regardless, uTorrent view can now handle a lot more torrents without using tons of CPU time.  Need to try and speed up my RegExp code, too, at some point.
+
+* uTorrent ordering improved slightly, and minor bug fixed (Used to start on item -1)
+
+* uTorrent no longer sends multiple http requests out at once.  Doing so seems to have made uTorrent mad.
+
+* Light off on screen saver code in Alerts.c no supports monitor off under Vista.
+
+* SafeSmart() added to CPUSaver.c, and calls to GetDiskSmartInfo() replaced with SafeSmart().  If a drive doesn't return any info the first time it's called, GetDiskSmartInfo() is never called again on that drive until the mod is restarted.  Still best to manually remove the SMART queries on drives that don't support it, though.
+
+
+
+Changed in 0.4.2.0
+
+Added functions:
+
+* GetFontHeight().  TextSize("")[1] seemed a little silly.
+
+* GetFileInfo().
+
+* FileWriter() added.
+
+
+Miscellaneous Changes:
+
+* GetG15s() takes an optional device type argument.
+
+* FormatSize() has two more options that let it display "b" for bytes.
+
+* New file input stuff now has option to read things one line at a time.
+
+* Now supports direct communication with G11 (Possibly), G15 v2, and Z-10 speakers.  This lets it change the light settings and, when LCDMon.exe isn't running, still display on the LCDs.  Suppose V2 support is technically a bug fix, since it was supposed to work before.  Thanks to Abraham and the authors of libg15 to the info needed to get this working.
+
+* Will automatically flush image every 5 seconds, just in case.  Primarily intended to restore connection to LCD when LCD Mon starts/stops at a screen that doesn't automatically refresh.
+
+* Internal font can now handle Unicode characters, so task list no longer uses two copies of what's essentially the same font.
+
+* FileReader reworked, constant names changed, ReadBytes() renamed.
+
+
+Bug fixes:
+
+* Quit event now sent to old session when a new session kills it.
+
+* File input stuff fixed (Used to always return null on file creation, due to a bug, among other things).  Still not completely tested.
+
+* "ASCII" files now decoded using the Windows-1252 character set.  Only affects handling of high ASCII.
+
+* GetCursorPos() fixed.
+
+* Several XML escape code crash and inifinite loop bugs fixes.
+
+* Infinite loop when reading empty file fixed.
+
+* Fixed lack of duplicate global/class variable name warning for last function parameter variable.
+
+* Fixed FormatText() crash issue on short strings.
+
+* A couple miscellaneous string parsing issues fixed.
+
+* Infinite loop on some tokenizer errors fixed.  Would cause it to continuously write the same error to the log file.
+
+* Fixed a bug that would skip the first byte of a UTF8 file with a byte order marker.
+
+* Fixed a bug that would cut off the ends of files with high ASCII characters in them.
+
+* strreplace() insufficient memory allocation crash bug fixed.
+
+* "_Total" value of cpu usage performance counter fixed.
+
+* Crash when trying to do low-level things to the G15 (Get/set light states) and no G15 was plugging in fixed.
+
+
+Script changes:
+
+* Scripts should now detect if G15 V2s are present, and flip response to media keys when appropriate.
+
+* 4wd's SABnzbd+ script added.
+
+* RSS viewer added.
+
+* Text editor added.
+
+* Added function to ShortCuts.c to trap cursor on its current monitor.  Uncomment the corresponding shortcut line in the ini to enable.  More info there as well.
+
+* Weather view scrolls more slowly and uses a smaller font for long weather descriptions (Modified scripts actually added to the 0.4.1.0 scipt a couple days after release).
+
+* Weather script displays a new icon (Courtesy of tfwarlord) when given a Celsius URL.
+
+* MPC script fixed (Modified scripts actually added to the 0.4.1.0 scipt a couple days after release).
+
+* Default status view no longer displays hard drive temps when SMART provides junk data for some (mysterious) reason.
+
+* Switching to the utorrent view is faster, though will now display before updating torrent data.
+
+* Framework tries to pass events to a generalized HandleEvent() function as well as one named after an event - this allows for simpler handling of all events.
+
+* StatusView now passes Show() and Hide() events to its children views, as well as all events except the LCD buttons and g-keys.  This allows subviews a lot more power and flexibility.
+
+* Nvidia temp display disabled by default, due to the number of crash issues reported with it.  No clue what the issue is.  Don't expect resolution in the near future, as it worsk fine for me under XP64, and there's almost no code to debug, so not really sure what's going on.
+
+* A couple functions added to list.c.
+
+* LineEditor now removes line breaks when pasting from the clipboard and no longer extends cursor/inversion 1 pixel too low.  Also now takes all 5 standard parameters to KeyDown().
+
+
+
+Changed in 0.4.1.0
+
+Bug fixes:
+
+* "Invalid Reference" error would be incorrectly output in some cases, like function(immediate)[whatever] causing compilation to fail.  Bug fixed.
+
+* Fixed a compiler crash bug also related to extra code validation.  Affected "object.value+=" and the like.
+
+* Fixed an infinite compiler loop in certain cases when using "object.value" syntax.
+
+* Alternative (Faster, performance-counterless) CPU code was accidentally disabled.  Enabled it.  It pretends its really the CPU performance counter, so no script changes needed.  Also reduced memory usage slightly when listening to no performance counters.
+
+* Fixed string passed to keydown events always having an extra null suck on the end.  Also fixed the value of the modifiers parameter.
+
+* Fixed RegEx bug with strings ending in ? or * when the second-to-last "character" in the query string was an escape sequence, bracketed sequence, or multi-byte character and the first match required it to match 0 characters.
+
+* Fixed bug when calling function that doesn't exist - could cause crash or infinite loops or other funky things.
+
+* Fixed a buggy optimization that messed up some negated expressions like "$x = -$i".
+
+* Fixed bug when performing floating-point arithmetic on strings that look like integers.
+
+* Due to a Microsoft bug, (isspace() crashing on high-ASCII characters), converting strings starting with a high-ASCII (Or unicode) character to numbers would crash.
+
+
+Added functions:
+
+* strreplace(), strswap(), strinsert(), substring() added.  They pretty much round out my string manipulation functions, and I don't forsee the need for any more, though I may add some later (Improved RegExp matching and better string comparison functions in particular are definite possibilities).
+
+* SetClipboardData().  Only supports text so far.
+
+* NvThermalSettings().  NvThermalSettings internal object type also added.  Plan to use more structs for this kind of thing, as they make for clearer code than lists and are faster than dictionaries.
+
+* GetDiskSmartInfo().
+
+
+Script changes:
+
+* Calculator script added, along with a text editor and a simple Eval() function.
+
+* Added noDrawOnCounterUpdate and noDrawOnAudioChange fields to views.  When 1, won't redraw on corresponding event types.  Still experimental, intended for modest CPU usage reduction.  Note that default is to redraw for backwards compatibility, as the Status view is the only view most people play with.  Note: LCDMisc Script.c and framework.c updated for this.  Will only run into any issues with a custom framework.c but default LCDMisc Script.
+
+* MediaPlayer scrolls more smoothly and a little more slowly.  Added a new scrolling text function to Text.c to do this.  Should also slightly reduce CPU usage.
+
+* FormatDuration() in time.c now reports hours correctly.  Affects media player screen.
+
+* Weather view now displays 5 day forecast if your Yahoo link has it (xml.weather.yahoo.com does.  Other yahoo sites only have two day forecasts, but should still work...Untested, though).  Forecasts automatically scroll.  May switch to using volume controls later.
+
+* MPC script now replaces the escape sequence "\'" in song titles with "'".
+
+* StatusViews can now take an image file name as the first parameter.
+
+* WeatherViews can now take a url as an optional parameter instead of reading the url from the ini, and can be set to display location instead of time/date.  There are some comments and sample code in "LCDMisc Script.c" about this.
+
+* Added function to disable keyboard lights during screensaver.  Can be enabled in LCDMisc Script.c.
+
+* Finally fixed incorrect "email.png" path in "LCDMisc Script.c".
+
+* Clipboard script wouldn't zoom certain images at all.  Fixed.
+
+* Download View added.  Currently only supports uTorrent.  Will need a major redesign before adding different sources of info.  Lets you stop/pause/resume torrents.  May add more later.
+
+* MPC and VLC urls moved to ini.
+
+* CounterUpdate event treated like all other events by the framework, so views can now do things in response to the message.  They can also prevent NeedRedraw() calls in response to the event.
+
+
+
+Changed in 0.4.0.3
+
+Bug fixes:
+
+* Timer bug fixed.  Added bug when I added optional objects to timers.
+
+* '^' fixed as a prefix in regexps.
+
+
+Modified scripts:
+
+* MPC script now works with MPC Homecinema.  Also reports when MPC is running but not playing anything correctly.
+
+
+
+Changed in 0.4.0.2
+
+Vileness:
+
+* Added evil manifest that should ask for elevated privileges on Vista, if your account has them.  UAC is evil, poorly documented and annoying.  Have nothing against adding account-based security, but the implementation itself sucks, and the documentation is fragmented and incomplete.  This is why people hate Microsoft.
+
+
+Language changes:
+
+* Added #define directive.  See Language.html for details.  Basically works like a castrated copy of #defines in C.  Reported #define-related compile errors can be rather messy in the log file, but will hopefully be more useful than corresponding error messages with MSVC.
+
+
+Bug fixes:
+
+* GetKeyState(), KeyUp(), and KeyDown() now all work.
+
+* Fixed a bug that would cause a crash on certain compile errors.
+
+* Minor bug fix for nulls occuring in files (Script and inis).
+
+* rand() should no longer result in infinite loops or crashes.
+
+* randf(x, x) should no longer return not a number.
+
+* Crash when killing the last remaining slow timer from its timer function fixed.
+
+
+Modified functions:
+
+* Both timer types can now take objects as an optional 4th argument.
+
+* The 3rd parameter of Run() can now take another value.  The new value allows simple executation of associated executeables, default browser (Given a url), etc.  Also switched the hotkey stuff to do this as well (It used to, but I switched functions a while back, breaking it).
+
+
+Modified scripts:
+
+* Menu at the bottom (Handled by framework.c) autohides after ~4 seconds.
+
+* Media script now scrolls much more smoothly.  Due to sync issues and laziness, it redraws 25 times a second, though it only scrolls 10 times a second.  CPU usage for the view is now a fair bit higher, but it's not too bad.  Text scrolling class also upgraded slightly.
+
+* Framework calls NeedRedraw() itself when adding or removing something from the event queue.
+
+* Added another type of overlay to Overlay.c.  TimedOverlays only display text with a box around them, and disappear after a preset amount of time.  Pressing an LCD button also makes them go away.
+
+* util\Shortcut.c added.  Has functions for launching browser windows based on clipboard text and automatically turning off capslock if you accidentally press it.  Shortcuts for all of them are in the ini, but disabled by default, except the capslock disabler.
+
+* Framework now cleans up better when quit due to another instance of LCD Miscellany starting.
+
+
+Other:
+
+* Script files can now be gzipped or compressed (That is, compressed using the brilliantly named "compress" algorithm).  Not all that useful, but the file reading stuff uses the same functions.  Not all that useful there, either, I suppose.
+
+* Can now launch functions from shortcuts.  No arguments are currently allowed.  Just make the shortcut launch FunctionName().
+
+
+
+Changed in 0.4.0.1
+
+Fixed bugs:
+
+* Ping code completely rewritten using a better documented API (Raw sockets.  Fun!), as I could never figure out the crash issue.  Should no longer crash Vista.  Only problem with the new method is that I'm relying on Windows's messaging infrastructure for being informed that a response has been received.  As a result, reported pings are often a bit higher than they really are.  Difference is generally not too bad, but it's very noticeable when pinging yourself.  Slow scripts can also increase reported values.  Note that the ping code is not fully tested, so may handle some types of ICMP error messages poorly (It's hard to get a "no route to host" response when you want one).
+
+* Parse error produced by empty script files (Or files with only #import / #requires) fixed.  As the program continues parsing files after the error, it wouldn't cause any issues with scripts, just a pointless error message.
+
+* <s, <S, >s, and >S no longer result in parse errors.  Thanks to McDope for finding the issue.
+
+* IPAddr.PingWait() now returns error strings on failure, as specified (Also returns a string on unknown error as well now).
+
+* Potential crash issue when objects are declared before the compiler encounters a call to their constructor is fixed.  Also can crash when aliasing dll functions, calling dll functions before they're declared, and possibly in one or two other situations.  Bug could cause the application to randomly crash right after launch.
+
+* Quit event added.  I had thought it was in the last release when writing some of the documentation, so it might have incorrectly referenced Quit events in a couple places.  Also removed "ShutdownProc" handling for the ini, which was accidentally left over from the old event handling method.
+
+* Fixed crash when trying to access non-existent audio devices with GetAudioValue() or SetAudioValue().
+
+* Fixed bug in SetProcessPriority() that would usually cause it to fail.
+
+* Not a bug, exactly, but when two Draw() events occured in close proximity (For example, a counter update and then an LCD button press), the first change would be drawn to the LCD immediately.  The second Draw event would then be processed and the image sent to the LCD, but it would be too soon after the first event, and the instruction would be ignored, resulting in the wrong screen being displayed for a second (Until the next counter update sends a CounterUpdate event, which then triggers a Draw event).  I've added a workaround:  When two draw events occur within too close to each other, I send the LCD image to screen immediately, and then send it again a little while later.  No extra Draw event is sent.  Overhead should be pretty minimal.
+
+* Fixed a buffer overrun issue in FormatTime().  Only an issue with short strings or those that blow up to more than 3 times their original size.  Thanks to McDope for noticing it.
+
+* Fixed an issue with math operations involving a double and a string.  Thanks to McDope for noticing it.
+
+
+New functions:
+
+* GetProcessPriority()
+
+* Image32.SaveBMP()
+
+
+Modified scripts:
+
+* Task Manager now displays and lets you set process priorities.  More info in documentation.  Also, stop takes you to the top of the list (As the documentation stated incorrectly with the last release).
+
+
+Miscellaneous:
+
+* ScriptDebug interpretation changed.  If its low order bit is one, assembly is written to a file, as it is now.  If the second bit is 1, the log's compilation entries are displayed on screen in a popup window.
+
+* WriteLog() and WriteLogLn() now take another paramater.  If it's 0 or not given, behavior will be as it is now.  If it's 1, a text window will pop up (If there isn't one already), and the new text will be displayed in it.  If it's 2, a window will only pop up if ScriptDebug's second bit is 1.
+
+* A few minor optimizations added to the compiler (This is, it makes slightly smaller and more efficient pseudo-assembly).
+
+* Added preliminary support for G15 V2.  Not sure if it will work, as I don't have one myself.  By support, I mean should work without LCDMon running, recognize the G/M buttons on it, and be able to turn on/off keyboard lights.  It will work fine with LCDMon running, regardless.  I assume everyone's using LCDMon anyways, and no one's using the G/M key code, anyways...  Need some samples for that, though I don't expect it to catch on.
+
+
+
+Changed in 0.4.0.0
+
+Fixed Script Bugs:
+
+* Performance Counters now handle unicode counter instance names correctly, so application names with non-ASCII characters will now be parsed correctly.  Didn't matter until I added unicode text display support, obviously.
+
+* httpGetWait() now checks the read buffer when an FD_CLOSE message is sent.  This message can be sent while there's still data queued to be read, which could causes issues in some cases, particularly with local connections.  Not sure if the issue is my fault for how I read data causing FD_READ to be sent late, or Microsoft's fault for not documenting funky behavior.
+
+* /= no longer returns a parse error or causes the application to crash.
+
+* Fixed a bug when multiple waits are active.
+
+* ParseBinaryInt() and ParseBinaryIntReverse() behavior on signed/unsigned values was reversed.  This is now fixed.
+
+* NeedRedraw() will now respond more promptly in some cases.
+
+* DisplayTextCentered() now calls the right function.
+
+* DisplayText() functions now work with mode = -1.
+
+* Pre-decrement (--x[i]) compiler error fixed.
+
+* Fixed 32-bit performance counter bug.  Would return a very negative value on overflow, as I used a 64-bit subtraction.  Only really matters when you accumulate the returned values.  Thanks to lalakobe for finding it.
+
+* Fixed a bug with casting nulls to doubles (And occasionally integers) in certain circumstances.
+
+* Minor substring comparison function bug fixed.  Used all over the place.
+
+* Optimization bug that could cause code corruption fixed.
+
+* Case insensitive string comparison opcode was never being generated.  Fixed.
+
+* Fixed several significant parser bugs.
+
+* Strings with nulls in them should now be concatenated properly.
+
+* Fixed spelling of April.
+
+* G15SetLCDLight now works properly.
+
+* Minor compiler memory leak fixed.
+
+* Pair of bugs fixed in ParseBinary*() string funtions which made them unuseable except when the second parameter was 0.
+
+* Fixed tokenizer error message text not appearing.
+
+* Identifiers (Variable, function, class names) can now start with underscores.
+
+* Fixed the mysterious vanishing image issue and potential image corruption problem.  Was caused by some versions of the (Vista) C runtime behaving slightly differently from the XP version, and a pair of bugs in my code.  Thanks for testing, McDope.
+
+* @listValue now works as the last element of a list.
+
+* DisplayText() returns the width of displayed text properly.
+
+* G15GetState() fixed.  Was returning the wrong value for the lights.
+
+* Fixed memory leak where variable at top of stack wasn't cleaned up.  Stacks are always empty when cleaned up, except on application exit while Wait() functions are running.  May matter now because some built-in object types need to be cleaned up more carefully.
+
+
+Changed Behavior:
+
+* size() returns 1 on ints and floats (used to return 0).  Also works for strings (I believe it did before, but wasn't documented).
+
+* DisplayTextRight() and DisplayTextCenter() now align all rows independently.  They also ignore leading/trailing spaces (Standard ASCII spaces only.  I know some unicode character sets have their own spaces.  Those aren't ignored).
+
+* All DisplayText() functions now handle windows line breaks properly.
+
+* Internal fonts switched to a new format.  Placement is handled a bit differently.
+
+* Run() and RunSimple() have another optional parameter and return process ids on success.
+
+* Removed octal string to integer conversion.  Only hex and base 10 are now supported.  So 010 is now 10 instead of 8.
+
+* Performance counters never return not a number (Formerly displayed as "-1.$") when not enough time has passed.
+
+* Format value now displays "NaN" for not a number and "Inf" and "-Inf" for positive/negative infinity.
+
+* IsList(), IsDict(), IsString(). IsInt(), IsDouble(), and IsCompound() no longer return 1 for null values.
+
+* MouseMove() now takes 5 parameters, and can be used to simulate the mouse wheel and move the cursor to an absolute position (And press buttons, though there's another function for that).  Primary purpose of this is to allow moving the mouse to absolute coordinates more easily, though I also expose some lower level functionality.
+
+* Added a parameter to FormatSize().
+
+* FormatTime() can now take a time zone as an optional 3rd argument.  See documentation for the format of the new parameter.
+
+
+Added Functions:
+
+* GetNumMixers(), GetAudioValue(), SetAudioValue()
+
+* SetProcessPriority()
+
+* GetClipboardData()
+
+* EnumWindows()
+
+* WriteLog(), WriteLogLn()
+
+* FormatText()
+
+* GetTickCount()
+
+* IsWindow(), FindWindow(), PostMessage(), GetMessage()
+
+* MonitorPower()
+
+* GetMemoryStatus(), GetVram()
+
+* sort(), indexsort(), indexstablesort()
+
+* type()
+
+* GetG15s(), G15EnableHID(), G15DisableHID(), G15GetButtonsState(), G15SetContrast() added.  Other G15 functions modified.  Can now display itself on LCD when LCDMon is not running, once you call G15EnableHID().  Will smoothly switch between rendering modes as long as LCDMon is not set to restart LCD Misc (In which case, second execution of it will kill the first).
+
+* Bencode(), BencodeExact(), Bedecode()
+
+* strstr(), stristr(), strsplit()
+
+* SaveString() and GetString()
+
+* RegExp()
+
+* Several math functions (trig, power functions, absolute value, rand).
+
+* Several basic list manipulation functions added.
+
+* Sleep()
+
+* call() added.  Objects also have call() functions.  Actually not true functions, but a pair of intrinsics handled by the compiler and virtual machine.  Allows strings to work as function pointers.
+
+* StackCount()
+
+* Equals()
+
+* TextSize()
+
+* IntersectImage()
+
+* SpawnThread(), PostEvent()
+
+* dictlist(), dictvalues(), and dictkeys() added.  (dictlist() was around before, but it used to be an op code (And one I apparently forgot to document, at that)).
+
+
+Removed Functions:
+
+* MessageBoxWait(), Alert(), SetMenuOrder(), GetActiveView() removed.
+
+* Performance counter functions removed, replaced with objects for type-safety.
+
+
+Added Object Types:
+
+* IPAddr objects added.  Used in DNS lookups and for pings.  Plan to add more functionality later.
+
+* Image objects added.  Works just like image ids used to work, except there's no FreeImage() function any more.  Also, when loading images repeatedly from the same file, new images are created.  LoadImage() also has a new argument that controls how downsampling to one-bit color is handled.  Added LoadMemoryImage(), which can work with downloaded images in memory.  LoadImage() also checks Override directory.
+
+* Image32 objects added.  Currently only useful for loading clipboard data.
+
+* PerformanceCounter objects added.  Basically work the same as before, but code needs to be changed slightly.  Not difficult.
+
+* Font objects added, support both bitmap and TrueType fonts.  TrueType support is basically a hack, and some fonts look pretty bad at small sizes.  Details in Functions.html, not Objects.html.
+
+
+Added Features:
+
+* New event handling system.
+
+* Performance counter limit removed (Was around 10).
+
+* [] now allows reading single bytes from strings.  Creates a new single character string rather than returning an integer ASCII code.  Cannot be used to modify a string.  This is not terribly efficient and not the recommended way of doing things with long strings.  Mainly intended for use with short strings.
+
+* Added gif and png support.  Only load the first image of animated gifs.
+
+* Http routines now support gzip encoding; it's automatically handled behind the scenes.
+
+* Post-increments now work with lists/dicts (And pre- and post-increments both work with struct/object fields).
+
+* pi's value is now hard coded, so pi (As a standalone identifier) is always replaced with 3.14159265358979323846.
+
+* #requires and #import added.  Proper use allows you to arrange files so that when updating, you can upgrade the standard scripts without messing up custom scripts.  Something similar is done for your ini.  Still rather messy.
+
+* Unicode DNS support added.  Requires a supporting OS (XP SP2 or Vista).  Might have some issues.  Unicode URLs are not supported.
+
+* Automatic recognition of UTF16 text files that don't start with a BOM (Byte Order Marker) if they start with ASCII characters (encoded in UTF16, of course).  UTF8 files still must start with a BOM to be distringuished from ASCII.
+
+
+Miscellaneous:
+
+* Removed one of the internal fonts (04b03 - the one with caps and lowercase).  The font is included with LCD Miscellany.  Internal font's don't support unicode, while created font objects do, which is the reason for the change.  04b08 left in primarily for simplicity.
+
+* Temp directory cleaner removed.
+
+* All code that would result in unscripted drawing to the LCD removed.  The application is now almost compeltely scripted.  The keyboard shortcut code was left in; however, as it's pretty simple to use and doesn't interfere with anything.  Its functionality could be duplicated by a script, but only with a lot of effort.
+
+* A lot of minor optimizations to the virtual machine and most commonly run functions.
+
+* Cpu usage performance counters transparently mapped directly to NtQuerySystemInformation function calls.  This can result in fairly significant reductions in CPU usage, particularly when using no other performance counters.
+
+* Switched from timeGetTime() to GetTickCount() for time calculations.  Slightly less accurate under certain circumstances, but it's faster and means the exe doesn't link to mmsystem.dll at all, while should save a modest amount of memory.
+
+* Config files are always named LCDMisc.ini and LCDMisc.cfg.  This allows you to put two different versions of LCDMisc.exe in the directory, with different names.  Mostly useful for debugging.  Can also put an ini in the Override directory, and it will be loaded instead.
+
+* Documentation incorrectly stated that ==S and related comparisons were case insensitive and ==s was not.  Documentation fixed.
+
+* Compiler and virtual machine revamped.  Instructions merged, other instructions made more powerful, resulting in fewer ops total and less op variety (Both of which will hopefully result in fewer mispredicted jumps).  32-bit pushes added.  Local/global/string table limits increased to 2^30 entries (Used to be 2^22 for all 3.  Doesn't really matter, as when using all included script files, there are fewer than 500 elements in the string table, which is the larges of the 3.  The size of the string table is the number of distinct hard coded-strings, not the number of strings in memory.  Hard coded strings include function and global variable names, object type names, object function names, and strings in compiled code ("' ' +s ', '" has two strings, but multiple occurances of identical strings are merged).  Stack space estimate more accurate (Stack size is only checked when functions are called, so each fucntion has an overestimate of how much stack space it needs, as calculating exact values is more effort than it's worth), more aggressive arithmetic optimizations.
+
+* Compiler recursion depth significantly reduced, though it still can go quite deep.
+
+* Potential crash on failed compilation issue resolved.
+
+* Names of local variables now displayed in assembly output (If anyone bothers to look at it).
+
+* List of connected G15's cached.  G15 light functions made a lot faster.
+
+* Increased the 15 MB BMP image size limit to 150 MB.  This affects clipboard images is well, which are BMPs with some of the headers removed.  Changed because I noticed an image of my desktop was just over 15 MB.
+
+* Improved multiple instance detection.  Helps prevent issues when LCDMon tries to run multiple instances at once.
+
+* HttpGetWait() no longer spawns a DNS lookup thread when given a numeric IP.  Only really matters when making multiple requests a second, and even then, not a huge improvement.
+
+
+
+Changed in 0.3.0 Revision 4
+
+Fixed Bugs:
+
+* Fixed wasted compiled code memory space when loading multiple files.
+
+* Fixed a bug that kept image files open after successfully loading their contents.
+
+* Fixed ctrl-a in the text editor causing a crash.
+
+* Dll calls now show up in assembly output.
+
+* Fixed stack/crash issue with make copy op code (Used primarily when "@" is used as a prefix).
+
+* Fixed reading of some types of performance counters.
+
+
+Changed Language Features:
+
+* Added objects.  IsCompound() returns 1 for objects.
+
+* Escape sequences in strings in single quotes are no longer processed, except for "|'".
+
+* A noLCD value of 1 in the ini file will disable LCD output.
+
+* :: Can no longer be used in variable or function names.
+
+* Identifiers now have a maximum length of 1024 characters.  This should be much more than anyone needs.
+
+* "Error log" no longer contains only errors.  It now also contains the names of all loaded files, in order, each followed by any errors with loading that file.  Error log renamed to reflect this (It's now just <exe name>.log).  Some error messages improved, others added.
+
+* Assembly output now displays script code and assmbly mixed together.  Also displays function names.  Switched from integers to hex strings with leading 0's to make it easier to distinguish assembly and script code.
+
+* Significant string table modifications.  The main string table has slightly less memory overhead and more is stored in it.
+
+* Precalculate some double divisions (x/A/B becomes x/C, where A, B, C are constants.  Integer overflow won't cause issues, but double overflow will.
+
+
+
+Added Functions:
+
+* IsObject() added.
+
+* Bencoding functions added.
+
+* SaveString()/LoadString() added.
+
+* G15 light functions added.
+
+* String conversion routines added.  Not sure how useful they are, at the moment.
+
+* GetWindowRect() and GetWindowClientRect() added.
+
+* Cursor, mouse, keyboard, and monitor functions added.
+
+* GetVersionString() added.
+
+* MessageBoxWait() added.
+
+* UnloadDll() added.  Note that initialization function may be called twice without the dll really being unloaded, as Microsoft often delays dll unloading.
+
+
+Modified functions:
+
+* GetVersion() list now has one more element:  32 for 32-bit build, and 64 for 64-bit.
+
+* Layout of message boxes improved.
+
+* Text display functions now work with multiple input lines (That is, when a linebreak of any type appears in a string).
+
+
+
+Changed in 0.3.0 Revision 3
+
+* Several dll data passing issues fixed.
+
+
+
+Changed in 0.3.0 Revision 2
+
+* Manifest updated yet again.  Should fix any remaining dll issues.
+
+
+
+Changed in 0.3.0 Revision 1
+
+* Should run on computers that don't have the latest version of MSVC 2005's dlls.
+
+
+
+Changed in 0.3.0
+
+* dll support added.
+
+* GetVersion() added.
+
+* Loading/Compiling multiple .c files sped up.
+
+* Fixed a couple bugs that could result in corrupted images or crashes.
+
+* Deletes error log when app starts.
+
+* Warning added to error log when global and local variables share a name.  This helps locate places where a "$" was left out or needs to be removed.
+
+* null and $null cannot be assigned values.  They always resolve to null.
+
+* Drawing functions now do nothing when not called in a redraw function.  Wait functions do nothing when called in a redraw function.
+
+* Post increment operators automatically replaced by pre-increments when possible.  Removes two op codes in a fair number of cases (like when used in the 3rd term of for loops).
+
+* Fixed memory bug in ParseXML().
+
+* Switched Clipboard over to always use unicode (Wasn't using it before because MS's specs seem to be wrong.  They indicate that it's better to use types you get earlier when querying the clipboard over ones you get later, to get a more accurate representation of the data, but unicode type can appear *after* text data type).
+
+
+
+Changed in 0.2.9 Revision 14
+
+* Assigning a singly value in a list/dict now works (Broke it when I added ++ and --).
+
+* Defining a function before using it won't cause a crash.
+
+* ParseBinaryInt(), ParseBinaryIntReverse(), ParseBinaryFloat(), ParseBinaryStringASCII(), ParseBinaryStringUTF8(), ParseBinaryStringUTF16(), and ParseBinaryBinary() all added.
+
+* GetSharedMemory() added.
+
+* GetSpeedFanData() removed and is now implemented in a .c file.
+
+* IsDouble() removed
+
+* Can use $ in variable names in function declarations.  They are not mandatory (So "function Goat(x) {...}" and "function Goat($x) {...}" are the same).
+
+* Several miscellaneous fixes to media player.
+
+* RunSimple() now does what it's supposed to do.
+
+* null() added.  Does nothing and returns null.  Added in preparation for adding function pointers.
+
+
+
+Changed in 0.2.9 Revision 13
+
+* Several miscellaneous fixes to media player.
+
+* Media player remembers last song played and starts with when playing a playlist, if it's present.
+
+* Switched time monitoring over from using the performance counter over to timeGetTime().  Reduces precision from microseconds to milliseconds, but it's a less error prone function, in theory.  Only affects some values returned by performance monitoring functions (Like bytes per second) and the value returned by Wait().
+
+* double colons can now be used in variable/function names.
+
+* @ can be used in comma-delimited dict or list expressions to add a list or dict directly to the new list or dict.  This can be used in function calls as well (That is, 'Run("format", "c: /s");' and 'Run(@("format", "c: /s"));' are equivalent, though the latter produces one more opcode, at the moment).
+
+* $ alone now works as specified.  That is, it refers to a list of all arguments to a function.
+
+* New opcode added to duplicate a list, so modifying $ after passing a single argument with @ to a function will not cause the passed list to be modified.
+
+
+
+Changed in 0.2.9 Revision 12
+
+* File selection screen fixed.
+
+* function aliasing added.
+
+* Quit() added.
+
+
+
+Changed in 0.2.9 Revision 11
+
+* Text reader high-ascii code fixed.  Affects .ini, .c, text editor, and .m3us in the media player.
+
+* Fixed prev/next track buttons when playing is stopped/paused.  Note that they now cause playing to start again.
+
+* Draw/Invert/ClearPixel() functions added.
+
+* Invert/ClearLine() functions added.
+
+* Invert/ClearImage() functions added.
+
+* Fourth parameter added to the three DisplayText() functions which, unsupririsingly, specifies if you want to draw, invert, or clear the text itself.
+
+* GetDiskSpace() added.  More efficient than a call to both GetDiskSpaceTotal() and GetDiskSpaceFree().
+
+* Error/asm logs reworked.
+
+* Reduced redundant/pointless script string allocations.
+
+* DisplayTextCentered() added.
+
+* Fixed a crash with hash tables with over 128 entries.
+
+* Removed LCD search timer.  Now only search for devices when an HID device interface is installed.  This reduces resource usage very slightly (Most CPU usage is due to performance/network counters and checking HDD space.  Everything else pales in comparison).  Real change is that it makes the app much more responsive to adding/removing devices.  Note that creating LCD emulation windows does not count as adding an HID device, so it will not detect new windows created this way unless a real logitech device is also installed/plugged in, or the windows are running when the app starts.  Installing new logitech drivers also probably will not trigger a notification, so you may need to restart the program (Or unplug your keyboard for a second) when this happens, to get everything working again.
+
+
+
+Changed in 0.2.9 Revision 10
+
+* Calling NeedRedraw() in Wait() functions and with fast timers now draws promptly, as it's supposed it.
+
+* Fixed debug info in error log to display properly with tabs.
+
+
+
+Changed in 0.2.9 Revision 9
+
+* LoadFraps() removed.
+
+* Fraps finally working perfectly?
+
+* width, height, and two unknowns added to Fraps()
+
+
+
+Changed in 0.2.9 Revision 8
+
+* LoadFraps() added.
+
+* Bunch of built-in functions now return null isntead of 0, by default, just to be consistent.
+
+
+
+Changed in 0.2.9 Revision 7
+
+* Crash on fraps quit fixed.
+
+
+
+Changed in 0.2.9 Revision 6
+
+* Fraps support added
+
+* Compiler is now over five times faster.  (My compiler generates the tables it needs just before compilation.  This is what I sped up.  Not the most useful optimization, as I can just cache them once I create them and use them for future compiling, but my old code was pretty bad).
+
+* Calling a wait function from a subroutine should now work properly.
+
+* CPU overhead of updating bandwidth counters reduced.  Overall, uses at least 20% less CPU time with the default script.
+
+* +S now works (Same as +s, as it was supposed to be from the start).
+
+* LCD buttons are now page up/down and mouse wheel is single item up/down on both the task list and file list views.
+
+* Single quotes can now be used for strings in addition to double quotes.
+
+* Debugger displays position within the line of code where a parse error occured.  Parser errors generally involve two adjacent elements not liking each other.  I display the line with the second one, so if you're missing a semi-colon at the end of a line, I point at the first character of the next line.
+
+* list() switched from an intrinsic command to a built-in function  It works exactly as before and the call is optimized out when called directly, producing the same code as before.  In the future, this change may be useful.
+
+
+
+Changed in 0.2.9 Revision 5
+
+* Fixed an invalid DNS crash added in last revision.
+
+* Comparing strings/lists/dicts with ints should no longer cause crashes.
+
+
+
+Changed in 0.2.9 Revision 4
+
+* Fixed multiple timers crash bug that could occur when creating/destroying a timer when there was at least one other slow timer.
+
+* Fixed DNS lookup double memory clear issue.  Would cause random issues.  Should fix what I thought was an XML parsing issue, and claimed was fixed last time.
+
+* Fixed multiple simultaneous DNS lookup issue.
+
+
+
+Changed in 0.2.9 Revision 3
+
+* Fixed FindNextXML memory issue when returning strings.  Wasn't incrementing their reference count.
+
+* GetCounterValueList() added.  Works just like GetCounterValue(), except when you use with a counter that gets multiple values, returns a list with related values appearing adjacent to each other, just like the XML stuff (FindNextXML will work on it as well).
+
+* Added a 3rd paramater to CreateTimer()/CreateFastTimer() that makes them run immediately when non-zero (In previous versions, slow timers always ran once within the next couple seconds, and fast ones always waited until their wait duration had passed).  Also added a similar second parameter to StartTimer().
+
+* Added an escape character to strings (There already was one, but it didn't work properly).  I decided to use | instead of \.  More details in the docs.
+
+* Run() and RunSimple() added.
+
+* Call opcodes given more internal parameters.  Results in better than 15% fewer opcodes with the same code, with the default code.  A couple related optimizations to reduces redundant memory allocation.
+
+* Now searches for new logitech LCD devices every 10 seconds instead of every second (Was supposed to be a minute, but forgot to change it when I switched over to using seconds instead of minutes for my timer objects)
+
+
+
+Changed in 0.2.9 Revision 2
+
+* Fixed SpeedFan fan and volt displays.
+
+
+
+Changed in 0.2.9 Revision 1
+
+* Fixed potential http redirect invalid buffer read issue.
+
+* Fixed potential crash issue with Wait() functions and with showProc/hideProc.
+
+
+
+Changed in 0.2.9
+
+New Scripting Features:
+
+* Event handling significantly fleshed out.  Events on IP/DNS change, Performance Counter update, and screensaver start/stop added.
+
+* NeedRedraw() added.  Triggers a redraw of the screen (And call to currently displayed view's RedrawProc) once the current script is done running.  Drawing functions should only be called in response to calls to the DisplayProc.  Calling multiple times before a redraw takes place will only result in a single redraw.
+
+* GetForegroundWindow(), GetWindowText(handle), GetWindowModuleFileName(handle, fullPath), CloseWindow(handle), GetWindowProcessId(handle), and KillProcess(processId) all added.
+
+* Two types of timers added.
+
+* Wait() added.  Causes a script to pause for the specified length of time and then resume.  In the meantime, other scripts can be run.  For simplicity and fast access to globals, only one script is ever run at a time.
+
+* Alert(text) added.  It makes a window on top of whatever's being displayed in the backgroun, just like the quit menu.
+
+* Added functions to test value types (IsNull, IsInt, etc).
+
+* Added StartScreenSaver().
+
+* Multiple scripted views now possible.  Can set an icon for each.
+
+* Outputs the number of the line it ran into problem on for most compilation errors.
+
+
+Changed Scripting Behaviors.
+
+* Only get/update remote/local dns/ip when they're being displayed, so there's no longer any reason to comment out the IP lookup line.
+
+* IP/DNS change alerts removed.  You can now set code to run when any of them changes.
+
+* Volume change and performance monitor updates no longer automatically trigger a redraw when a script view is visible.  Instead, they can be set to call a function.  One function for each event can be set for each scripted view and one related global function can be set as well.  Only the function for the currently visible view and/or the global function will be called when an event happens.
+
+* Trying to draw a rectangle with x2 < x or y2 < y will now draw a rectangle instead of doing nothing.  The old behavior was deliberate, but this should make debugging easier.
+
+* All timer values (in the ini) are now in seconds.  Keeps things simpler.
+
+* SetMenuOrder() now takes multiple string names instead of one long string with values separated by commas.
+
+
+Fixed Scripting Bugs:
+
+* Calls to built in functions (With no arguments) can now be set as responses to events in the ini.  Fixed mostly for NeedRedraw().
+
+* Fixed a crash issue when trying to add references to a null object (Not sure if the problem actually exited in Revision 7 or was added after).
+
+* Inverse percent performance counters (Like CPU usage) should no longer return values below 0.  This was due to a Microsoft windows bug (10 million, 100 thousand cycles idle out of 10 million cycles makes no sense).  This is likely due to one CPU running a few more cycles than the other in a single update interval (Or intervals on the two CPUs not being updated at the same time).
+
+* Fixed a bug where using +s when the first parameter was not null would return null and result in a memory leak.
+
+* Fixed a memory leak when a top level function call returns a string, list, or double.
+
+* x[y][z] works again.  Broke it when I added ++ and --.
+
+* DisplayImage's width/height paramaters now work as they should (They used to draw 1 pixel too much in both directions).
+
+* Fixed a bug where drawing/freeing any image would always result in the last loaded image being drawn/freed.  Also fixed an infinite loop when trying to quit with images loaded.
+
+* Fixed list() and dict().
+
+
+Scripting Optimizations:
+
+* A couple minor optimizations added.  Constant expressions (involving +, -, /, *, and %) are now evaluated during compilation (ie. "1-(3+$x) - 4 +5" should produce the same operations as "-2 - $x + 1".  Note that variables remain in the same location relative to each other and to constants, though the order of evaluation may be changed (so "-($x+3) + 1 - 4 + 5" would produce fewer op codes).  Other than roundoff errors with floats (And overflow, I suppose, but that's only an issue with insanely large numbers), everything should always evaluate to the exact same value as before.
+
+* List creation opcodes modified to require fewer ops and speed up code execution.  Most scripts should run significantly faster.
+
+
+
+
+Changed in 0.2.8 Revision 7
+
+Script:
+
+* DrawRect() and InvertRect() should now do what they're supposed to.
+
+* GetTotalMemory() added.
+
+* Changed how jumps and comparisons are handled.
+
+* Added new jump optimization rules to account for previous change.
+
+* String comparisons added (==s, >=s, etc.  Use 'S' instead of 's' for case insensitive.  Currently neither handles funky characters correctly (Accent marks, etc.  Won't crash, but will sort them as if they are different letters).  +S is now the same as +s.
+
+
+Text Editor:
+
+* Improved navigation of windows text files slightly.
+
+
+
+Changed in 0.2.8 Revision 6
+
+Script:
+
+* for loops added
+
+* Nested jump bugs fixed
+
+
+
+Changed in 0.2.8 Revision 5
+
+Script:
+
+* GetAllUp()/GetAllDown() added.
+
+* Reading beyond end of list returning data bug fixed.
+
+
+
+Changed in 0.2.8 Revision 4
+
+Script:
+
+* Add BMP, jpeg, and tga image support.
+
+* Added break and continue.
+
+* Removed generation of superfluous return statements.
+
+* Added op code to push shorter ints.  Multiple copies of the new op code in a row are optimized to run quickly.  Combined with the new list opcode, this should speed up function calls/argument passing significantly.
+
+* Fixed += and the like when using with the [] operator.
+
+* ++ and -- added.  Do not work perfectly ("++ ++ x", "++ $x -- --", "++ -- ++ $x[4][2][3]", and "++$(x[1])[2]++" all should all work, but "--(x)", "x-- [0]", "++x =" and "$x[1]++" do not.  The second one has no meaning, the first is not worth the effort, but I might fix the last later.  The third I might also fix, as it shouldn't be too hard.
+
+* Switched from an LR(0) parser with a hack for if/else statements to an SLR parser.  Shouldn't change much, but it means my parser is a bit slower, as it constructs the new tables it needs at runtime.
+
+* Second paramater of FormatTime() now works.
+
+* ShowProc/HideProc/ShutdownProc entries added.
+
+
+Status:
+
+* Due to a new bug, was calling update procedure twice per second.  It's now back down to once per second (And whenever the system volume value changes).
+
+
+
+Changed in 0.2.8 Revision 3
+
+Script:
+
+* Added a function to get data from SpeedFan.
+
+
+Changed in 0.2.8 Revision 2
+
+General:
+
+* Fixed a bunch of memory leaks.  Most related to scripting, but one has been in the code since 0.1.6, at least.
+
+
+Script:
+
+* Fixed an issue with parsing certain expressions involving operators.
+
+
+
+Changed in 0.2.8
+
+General:
+
+* Using a lot more unicode behind the scenes, especially UTF16 with windows functions.
+
+* Fixed a failure to refresh LCD screen issue when using multiple Logitech LCDs and one is disconnected and you're viewing a screen that isn't changing (Clipboard, sound screen, or media player when not playing anything.  Once screen is drawn again, everything would work fine).  Sure a whole lot of people ran into this  problem many times.
+
+* Scripting added.
+
+* Finally increased spacing around the '1' character.
+
+
+Changed in 0.2.5, second release
+
+General:
+
+* Compiled with older SDK, so it works with 1.02 drivers again.
+
+
+Text Editor:
+
+* Ctrl-x now cuts instead of copying.
+
+* Ctrl-x/c cut/copy the current line of text when nothing is highlighted
+
+* Ctrl-del/backspace delete the previous/next word, starting from the cursor's position.
+
+* Ctrl-left/right navigate to the previous/next word.
+
+* Indices all changed to 32-bits.  Not meant for huge files, anyways.
+
+
+
+Changed in 0.2.5
+
+General:
+
+* Support for multiple LCDs added (Only displays on 160 by 43 LCDs at the moment, might remove that restriction when I redo my drawing stuff).  This means the app will now work on multiple g15s (Not sure why you'd want them) or if you have a g15 and z-10 speakers.  Currently displays the same thing on all of them.  Cannot use LCD buttons on more than one of them at a time, but who would want to?
+
+* Fixed a couple potential threading issues with my keyboard stealing stuff (I've never run into them, and no one has mentioned having any issues.  Most likely to occur when using the media player and the clipboard at the same time).
+
+* Pressing up/down when menu is hidden now moves the selection one up/down in addition to showing the menu.  Pressing ok just shows the menu.
+
+* Minor infrastructure improvements.  Might be a bit more responsive/require marginally less CPU time.
+
+* Menu moved to the bottom.  Looks a bit uglier, for the moment.  Might move it back later.
+
+
+System Status:
+
+* Insane CPU usage of email check reduced significantly.  0.2.0 took a fair bit more CPU time just because of this check (This is only an issue when displaying email count).
+
+* Potential email check always reporting 0 issue resolved.
+
+
+Media Player:
+
+* Added.  Early version, still pretty ugly and painful to use.  Intend to improve in future versions.
+
+
+Text Editor:
+
+* Added.  Saves ASCII and unicode files (Still no unicode text display, however).  No save as option yet, can only load existing files and save over them.
+
+
+File Browser:
+
+* Added.
+
+
+
+Changed in 0.2.0
+
+General:
+
+* Starting an instance when an old one is running kills the old instance.  This means when modifying the ini, just run the exe again for the changes to take effect.
+
+* Fixed delayed redrawing in response to a lot of events.  App is much more responsive to key presses, among other things.
+
+* Removed a memory leak of about 8 bytes every time the volume is changed.
+
+* Fixed a potential application crash on initialization.  Never heard of anyone running into it.
+
+
+System Status:
+
+* Volume percent display should work for some people for whom it didn't before, though it still won't work on Vista.
+
+* Unread email display support added (XP only).  Just uses the standard XP function for this.  If it's not getting the right number, not much I can do to fix it.
+
+
+Task List:
+
+* Secondary sort is now done by position in the previous sort.  New items are at the bottom.  This is useful when sorting by CPU usage.  Processes that recently used CPU time but no longer are doing so stay near the top.  Leaving the task list resets this information.
+
+
+Clipboard:
+
+* Fixed a bunch of bugs involving zooming and caching clipboard images.
+
+* Steal fewer keys when scrolling text.
+
+* Clipboard images now start out zoomed out as opposed to at the last level of zoom used with the previous image.
+
+* Fixed support for images with an alpha channel.
+
+* Now displays images that come with extra space at the end of their data.  Only seen Microsoft Paint do this.  Not sure why I bothered to test that.
+
+* Fixed text not being reformated on showing/hiding menu.  Also improved line breaking routine.
+
+* Added support for lists of files.
+
+* Switched to UTF8 instead of ASCII in preparation for adding unicode font support.  Currently makes Unicode text look much worse, however.
+
+
+Changed in 0.1.10 r2
+
+General:
+
+* Removed version number from string sent to the control panel.  This was accidentally introduces in 0.1.10 and would cause the application to be listed multiple times under logitech's config screen.  With version 1.02 of the Logitech drivers, to get rid of the second entry, either move, rename, or LCDMisc.exe and reboot.  Then put it where you want it and run it again (Might work with 1.03, too).  To fix this problem more simply, just make sure only one of the duplicate entries is set to be started by the LCD.
+
+
+
+Changed in 0.1.10
+
+General:
+
+* Removed extra check of button status when updating the display for other reasons.  Should slightly even out repeat delay with LCD buttons.
+
+* Fixed a thread handle leak in DNS lookup code (Only affected the DNS lookup for getting remote IP).  Unlikely to cause any noticeable issues unless running for months nonstop.  (If you're wondering why I use extra threads for this:  Microsoft only provides a blocking function to look up IPv6 DNSes, so you either have to completely lock the app to look up IPs, make your own threads, or use IPv4 only).
+
+* Added a tray icon.  Disabled by default.
+
+
+System Status:
+
+* Can now display volume.
+
+* Changed how bandwidth is calculated.
+
+* Added option to alert on remote/local IP/DNS change
+
+* Chunked http/1.1 response support should now be fixed.  Hopefully this will clear up any remaining stability issues.
+
+
+Volume Control:
+
+*  Removed delayed loading of Microsoft's volume control libraries.  This results in slightly more memory usage before you go to the volume control screen for the first time, but removes the delay when selecting that screen for the first time.  This was done because the volume display on the status screen uses the libraries (And the delay started getting on my nerves).  This change does not cause any noticeable delay when loading the app into memory.
+
+
+Changed in 0.1.9 (First version with changelog):
+
+General:
+
+* The 4 LCD buttons should be more responsive.  Releasing and pressing them quickly now works (And is faster than holding them down).  This could theoretically cause some accidental double presses at times when the app locks up (Due to massive HDD/swap file thrashing, like when you quit a game).  I have yet to tun into it, but it's possible.  I have a work around that I think prevents this, but I'm not sure it works.  This is largely due to Logitech SDK/Windows architectual design decisions.  Logitech makes it physically impossible to tell if a button is down at any given time.  If you use Logitech's function to check button state at any given instant, it seems to tell you which, if any, buttons were pressed recently (Within the last half second or so.  Not sure of exact time, but if you press a button twice in a row, you'll almost never get it telling you the button is released in the middle).  You can also have Logitech tell you when a button is pressed.  This handles double clicks fine, but when your system is locked up (Or the app is busy; such as when getting large amounts of data from the clipboard or performing any other slow operation), you can encounter synchronization/threading issues, and could process a timer event before the button up event, so you don't know a button has been released until it's too late.  I now try to use both methods together to avoid the problems inherent with using either one individually (Was doing this before, but my new method should work a bit better, in general).
+
+* A lot of miscellaneous responsiveness improvements and reduction in needless redraws in certain cases.  Reduction in CPU usage should not be significant, in general.
+
+
+System Status:
+
+* Crash bug when connection attempt (For looking up remote IP) fails fixed.
+
+* IP lookup timers fixed.
+
+* Bug where only the last server in the IP lookup list would be used once it was reach fixed.
+
+* IP Lookup list updated.
+
+
+Task Manager:
+
+* Numbers now all add up to 100% (Ignoring roundoff).
+
+* Better handling of processes with duplicate names.  Now use process IDs to sort instead of process name.
+
+* Increased responsiveness.
+
+* Eliminated possible synchronization error.
+
+* Fixed a bug that would cause 2 redraws per second, as I only update the displayed values once a second.
+
+* Next track/previous track buttons now change the sort order.  Play/pause button reverses the sort order.  When the sort order is unclear (Same name, both have 0% CPU usage), processes with lower ids appear first (Might switch to name or using a secondary sort columns later).  Note that this is true regardless of sort order, so play/pause does not exactly reverse sort orders.  Last used sort order is saved to the config file and restored on restart.  Process 0 (Idle) is always at the top.
+
+* Stop returns you to the first item (which should always be idle).  I prefer not to use arrow keys/page up/down/etc unless necessary (So it doesn't conflict with any program you're currently using to edit text/images/whatever, other than possibly my capture of the escape key).
+
+
+Clipboard (Text Mode):
+
+* Displayed text now starts at top of clipboard text instead of bottom (Bug introduced in 0.1.8).
+
+* LCD up/down buttons, Arrow keys, page up/down, home/end now can be used to navigate text. (Volume wheel also acts as page up/down to be consistent with task manager).
+
+* Fixed a bug where it was drawing too much (160 vertical pixels of text instead of 43.  Oops).  No real speed improvement, as drawing nothing is pretty fast, and I format extra text anyays.  It does fix the behavior of end, however (down/page down/end behavior all depend on this being right).
+
+
+Text Editor:
+
+* Fixed a bug where the chunks I break the text into were much too large when I did it all at once.  (No, text editor's not in yet.  I use the same code to format the clipboard.  End result should be marginally less memory usage for large amounts of data.  Once the text editor's in, should result in faster reformatting when modifying large files that were loaded directly and after large paste operation).

@@ -1,0 +1,109 @@
+// Note:  Every color must be followed by a Bg or a Text.
+// Text colors default to default text color when not found,
+// Bg to default bg color (Or to inverted defaults, depending on situation).
+
+// First line cannot have data, because of how regexps work.
+
+colorDefaultBg = 255,255,255
+colorDefaultText = 0,0,0
+
+colorDefaultInvertedBg = 80, 80, 200, 128
+colorDefaultInvertedText = 255,255,255
+
+colorBg = 255,255,255
+colorText = 0,0,0
+
+colorHighlightBg = 0,0,212
+colorHighlightText = 255,255,255
+
+// Only used on colored screens, so don't need to be careful.
+colorHighlightUnfocusedBg = 148,148,255
+colorHighlightUnfocusedText = 255,255,255
+
+// Only used on colored screens, so don't need to be careful.
+colorHighlightUnfocusedBg = 148,148,255
+colorHighlightUnfocusedText = 255,255,255
+
+// Used in multi-column displays to make columns easier to read.
+colorFirstColumnBg = 230, 230, 255
+// Even/odd column color options.
+colorEvenColumnBg = 230, 230, 255
+colorOddColumnBg = 255, 255, 255
+
+colorWindowBg = 230,255,230
+
+colorDriveText = 0, 160, 0
+colorDirectoryText = 160, 0, 0
+
+// Currently only used by task manager.  May add elsewhere eventually.
+// Not really text, but goes on default bg, so...
+colorScrollBarText = 0,0,190
+
+
+smallDefaultFont = 04b03, 8;
+smallHeaderFont = 0;
+
+smallTaskManagerFont = 0;
+smallCalculatorViewFont = 04b03, 8
+smallDownloadViewFont = 04b03, 8
+smallClipboardViewFont = 04b03, 8
+smallRSSViewFont = 04b03, 8
+smallRSSViewTitleFont = 04b03, 8, 0, 1
+smallWeatherViewFont = 0
+// Used for forecasts when low on space
+smallWeatherViewCurrentFont = 6px2bus, 6
+smallFileBrowserFont = 04b03, 8
+smallOverlayFont = 04b03, 8
+smallTextEditorViewFont = 04b03, 8
+
+
+// Icons
+smallTextEditorViewImage = TextEdit.png
+smallStatusViewImage = Eye.png
+smallTaskManagerImage = Computer.png
+smallMediaViewImage = MediaPlayer.png
+smallClipboardViewImage = Clipboard.png
+smallWeatherViewImage = Weather.png
+smallWeatherViewCImage = Weatherc.png
+smallRSSViewImage = RSS.png
+smallDownloadViewImage = utorrent.png
+smallCalculatorViewImage = Calculator.png
+
+smallSABnzbdViewImage = SABnzbd.png
+
+
+// Fonts for large (320 by 160) color LCDs.
+// The final 5 signals to use cleartype with Window's font-drawing code
+// instead of the internal 1-bit fonts.
+
+bigDefaultFont = Arial, 18,0,0,0,5
+bigHeaderFont = Tahoma, 22,0,0,0,5
+
+bigStatusViewFont = Arial, 20,0,0,0,5
+bigTaskManagerFont = Arial, 18,0,0,0,5
+bigCalculatorViewFont = Arial, 24,0,0,0,5
+bigDownloadViewFont = Arial, 18,0,0,0,5
+bigClipboardViewFont = Arial, 18,0,0,0,5
+bigRSSViewFont = Arial, 18,0,0,0,5
+bigRSSViewTitleFont = Arial, 18,0,1,0,5
+bigWeatherViewFont = Arial, 18,0,0,0,5
+// Used for primary forecast, on top of image
+bigWeatherViewCurrentFont = Arial, 20,0,1,0,5
+bigFileBrowserFont = Lucida Sans Unicode, 16,0,0,0,5
+bigOverlayFont = Arial, 18,0,0,0,5
+bigTextEditorViewFont = Arial, 18,0,0,0,5
+
+
+// Icons
+bigTextEditorViewImage = TextEdit32.png
+bigStatusViewImage = Status32.png
+bigTaskManagerImage = Computer32.png
+bigMediaViewImage = MediaPlayer32.png
+bigClipboardViewImage = Clipboard32.png
+bigWeatherViewImage = Weather32.png
+bigWeatherViewCImage = Weather32.png
+bigRSSViewImage = rss32.png
+bigDownloadViewImage = utorrent32.png
+bigCalculatorViewImage = Calculator32.png
+
+bigSABnzbdViewImage = SABnzbd.png

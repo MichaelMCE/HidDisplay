@@ -1,0 +1,93 @@
+<HTML>
+<HEAD>
+ <STYLE type="text/css">
+   .FXN {font-weight: bold; color: #0000C0;}
+
+div {
+  border-width: 1px;
+  border-color: #0000FF;
+  border-style: solid;
+  background-color: #EEEEFF;
+  padding: 10px;
+}
+  </STYLE>
+ <TITLE>LCD Miscellany Event Reference</TITLE>
+</HEAD>
+<BODY>
+
+<H2>Event Reference</H2>
+LCD Miscellany generates and sends event messages when certain system events occured.  Each event can have at most one fucntion that is called in response to it.  Note that the sample code has a class that receives and dispatches almost all messages, though it is possible to write a much simpler script that only has a single view that processes all messages itself.
+
+<P> Note:  LCD Miscellany does not have a unified event queuing system, so there is no guarantee events will be sent in the same order they are triggered.
+
+<P>
+<div>
+<B>Functions</B><BR>
+<P><SPAN class="FXN">SetEventHandler</SPAN> (eventName, functionName, object, param)<BR>
+Sets the handle for the event with the specified eventName (Which is a string).  functionName is the name of the function to call.  If object is null, it's the name of a global function, and if object is an object, it's the name of a method that the object implements.  If the event already has a function, overwrites the old function/object for the event.  If functionName is null, clears the handler for the event.  Param is passed to the event handler when the event occurs.  Returns null on fail or when clearing an event's function or on failure.  Returns 1 on success.
+
+<P>When an event occurs, at the next possible convenience, the specified function called with the arguments (eventName, param, arg1, arg2, ...).  eventName is the event's name, as a string.  eventName allows a single dispatch function to use call() to call different functions named after the event.  The remaining arguments depend on the event.
+
+<P><SPAN class="FXN">RegisterKeyEvent</SPAN> (modifiers, vkey1, vkey2, ...)<BR>
+Enables stealing of keyboard messages for the specified keys/modifiers.  Note that there's currently no way to passively monitor keypresses.  Modifiers is a series of flages:  1 for shift, 2 for control, 4 for alt, and 8 for the windows key, to indicate the state of modifier keys to require be pressed when the keys are pressed.  Bits 16-19 are used to indicatre modifiers you don't care about, so (1&lt;&lt;16)+4 would mean alt is down, and shift can be up or down.  Note that a modifier where a flag is set as must be down and don't care about, like (1&lt;&lt;16)+1 results in an error (Null returned).
+
+<P>The vkey parameters are virtual key codes, as integers.  Googling can give you a list.  There's no #define or const keywords yet.  Once/if I add them, I'll use them to create a list of codes.  There's an internal count of how many times each key+modifier has been registers, up to 255 per code.  This allows multiple scripts to register the same key events without causing too many issues for eachother, as long as the KeyUp/KeyDown events are set properly.  The return value is how many counts have been updated, null on failure.
+
+<P><SPAN class="FXN">UnregisterKeyEvent</SPAN> (modifiers, vkey1, vkey2, ...)<BR>
+Same as above, except decrements the counts, returning the number decremented.
+
+<P><SPAN class="FXN">PostEvent</SPAN> (eventName, runNow, list)<BR>
+Runs the event with the specified name.  If runNow is 0, triggers the event at some future point in time, after the current script completes or enters a wait state.  If runNow is 1, triggers the event instantly.  Note that if the event results in a new script entering the wait script, the function will return once the wait state is entered rather than waiting for processing to complete, much like SpawnThread.  List is a list of all but teh first two of the event's arguments.  If you want to trigger Draw events, use NeedRedraw() instead.  Note:  If you keep on calling PostEvent with runNow=1 recursively, you'll eventually get a stack overflow and a crash.  It's one of the few ways that scripts can cause LCD Miscellany to crash that I don't care about fixing.
+
+</P><SPAN class="FXN">NeedRedraw</SPAN> (drawNow)<BR>
+Signals that the screen needs to be redrawn.  If drawNow is 0 or 1, a Draw event will be called at the next possible opportunity.  If called multiple times, only a single Draw event will be triggered (Which is the main purpose for the function).  If you want to redraw immediately, set drawNow to 1 and the script will pause until drawing is complete.  As with PostEvent, you can get stack overflows if you're careless.
+</div>
+
+<P>
+<div>
+<B>Events</B><BR>
+See SetEventHandle for a general explanation.
+<P>"<SPAN class="FXN">Draw</SPAN>" ("Draw", param, kbName, res)<BR>
+Posted only in response to NeedRedraw events.  Wait functions cannot be called in response to a Draw event, and drawing functions can only be called in response to a draw event.
+
+<P>kbName is a string and can be used with other functions the take a keyboard name.  res is the list (width, height, bpp, keyboardApi).  Value of the last is subject to change, so not going to go into it.  Width and height are obvious.  bpp is 1 for monochrome and 32 for the color LCDs.
+
+<P>"<SPAN class="FXN">KeyDown</SPAN>" ("KeyDown", param, modifiers, vkey, string)<BR>
+"<SPAN class="FXN">KeyUp</SPAN>" ("KeyUp", param, modifiers, vkey, string)<BR>
+Triggered when a monitored key is pressed/released, with the right modifiers.  Windows processing of the key has already been supressed by the time the function is called.  KeyDown events are generated periodically as a key is held down based on Window's settings.  Modifiers and vkey are as already specified above.  String is the pressed key mapped to a string, taking into consideration the state of capslock, shift, and numlock.  It may be null if there's no associated character code(s), like for the media keys.
+
+<P>"<SPAN class="FXN">G15ButtonDown</SPAN>" ("G15ButtonDown", param, key, keyboard)<BR>
+"<SPAN class="FXN">G15ButtonUp</SPAN>" ("G15ButtonUp", param, key, keyboard)<BR>
+Posted when a sepecial G15 key is pressed or released.  Also periodically send when a key is or held down.  Only gives info on the first 4 (6 on the G15) LCD buttons unless G15EnableHID() has been called.  Key is a single flag depending on which key is pressed/released.  For information on which bit is which, see the G15 section of  <A HREF="Functions.html">functions</A>.  Keyboard is a string identifying the keyboard that can be used with some of the G15 functions.  Unlike key messages, both Logitech's Profiler (If running) and LCD Miscellany will receive G15 button events, so both will end up responding to the same event, for the M-keys and G-keys.
+
+<P>Note that when two keys are held, there is no guarantee that the order events are generated will be consistent.  That is, if you hold down LCD1 and LCD2, you might get events in the order LCD2, LCD1, LCD1, LCD2, LCD1, LCD2, etc.  This is because all the buttons are checked periodically (From least to greatest) on a timer, after the first event is triggered.
+
+<P>Also note that it's possible for some G15s to be visible twice, once via HID and once via LCDMon.  In this case, only the connection through LCDMon will send messages for the standard 4-6 LCD buttons.  Others will come from the other keyboard.  There may also be more HID devices than LCDMon devices, because Logitech combines multiple LCDs of the same type into one object.
+
+
+<P>"<SPAN class="FXN">CounterUpdate</SPAN>" ("CounterUpdate", param)<BR>
+Called when the auto-updating counters update.  Discussed more in <A HREF="Objects.html">objects</A>.
+
+<P>"<SPAN class="FXN">ScreenSaver</SPAN>" ("ScreenSaver", param, starting)<BR>
+<P>"<SPAN class="FXN">MonitorOff</SPAN>" ("MonitorOff", param, starting)<BR>
+Called when the ScreenSaver starts/stops or monitor is turned on/off due to power saving settings.  Note:  MonitorOff events only work under Vista.  Event may not be triggered instantly, but rather trigger a second or two after the actual event.  If the screensaver is started and then stopped very quickly, no event may be triggered at all.  Starting is 1 on screen saver start/power off, 0 on screen saver stop/power on.
+
+<P>"<SPAN class="FXN">ForegroundWindowChange</SPAN>" ("ForegroundWindowChange", param, hwndnew, hwndold)<BR>
+Called when the foreground window changes.  Hwnds are the window handles of the new and old foreground windows.  Events may not be triggered instantly, but only after a second or two has passed after the change, and you might not evet every change when focus changes rapidly, but you will get the final foreground window.  Note that the value used to keep track of the foreground is not updated unless there's a function set for the event, so when you enable a function for the event, you may or may not get an instant event about the current foreground windows, and with an incorrect old foreground windows.
+
+<P>"<SPAN class="FXN">WMUser</SPAN>" ("WMUser", param, wParam, lParam)<BR>
+Called when the application's window receives a WM_USER message with arguments of wParam and lParam.  In the default script, when both values are 0, the app calls NeedRedraw().  To find the handle to send messages to, external applications should call (Note: using FindWindow instead doesn't seem to work consistently): FindWindowW(L"LCD Miscellany",  L"Text no one should see.");
+
+<P>"<SPAN class="FXN">Exec</SPAN>" ("Exec", param, args)<BR>
+Called when LCD Miscellany is run from the command line with 1 or more parameters.  Called both when started with command line parameters and another instance is run with paramaters (So you can set up associations, if you really want).  Args is a list of the command line arguments.
+
+<P>"<SPAN class="FXN">Quit</SPAN>" ("Quit", param)<BR>
+Sent when the application quits.  Other than Draw events, only even in which Wait functions cannot be called in response to.  Will always be the final event to be sent, just before application exit.
+
+</P>"<SPAN class="FXN">AudioChange</SPAN>" ("AudioChange", param)<BR>
+Sent when the state of any audio mixer device changes.  This will be sent on system master/wave/etc. volume or mute setting changes, and on similar events.  It's currently not possible to tell what changed without tracking values.  AudioChange events will also be sent for some values that cannot be read from any of the audio API functions.  The primary purpose of this event is so that the screen can be updated immediately when a setting changes.  Note that if you're running the 32-bit exe on Vista under XP compatibility mode, you may always get two of these events in a row.
+
+</div>
+
+</BODY>
+</HTML>

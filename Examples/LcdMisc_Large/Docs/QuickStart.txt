@@ -1,0 +1,78 @@
+The purpose of this document is to quickly point out how to modify some simpler things using the script (.c) files. For information on the interface of the default scripts and how to set up everything (Like the weather url and the media player screen), go to the "Views" section of General.html.
+
+ 
+
+To install, just extract the mod to any directory and run the exe. If you haven't before, you'll also need to install the fonts in the install subdirectory to Windows\fonts. For winamp support, you need to install the WinAmp plugin, also in the install directory.
+
+After modifying any configuration file, changes won't be applied until you restart the exe (You don't need to close it. Old session will automatically be closed). If something stops working, check "LCDMisc.log" for error information. This guide focuses on making small changes to the default scripts rather than writing new scripts from scratch.
+
+ 
+
+"LCDMisc.ini" has the information about which files to load, which scripts to start on launch, and a couple configuration strings. The format is pretty self-explanatory. For more information on specific values in the the ini, look in the corresponding section of General.html. If you modify it, copy the modified version to "override\LCDMisc.ini" so it won't be overwritten when you update and you'll still be using your modified version. I generally mention when I make significant changes to the default ini, though after a couple revisions, you may want to look over the changelog, doing a search for "ini". The same goes for any modified .c files.
+
+ 
+
+The .c files all contain scripts. The script "include\LCDMisc Script.c" initializes everything, and is where you want to go for adding/removing screens and scripts. Just as with the ini, put any modified files in "override\path\file name.c", where path is the path relative to include, so "include\LCDMisc Script.c" goes to "override\LCDMisc Script.c". To remove a screen, locate the line that creates it and delete the line. Which lines do what lines are pretty obvious, even if you know nothing about programming. "TaskManager()" creates the task manager view, for example. You can also move the lines around to change the order of the screens. A couple of the screens have multiple subpages. For these, you can remove/add subpages or remove the entire block of lines. Indentation should make these pretty easy to spot.
+
+ 
+
+The time/date header is in "framework\header.c". The format used is pretty simple. It's documented in the function.html file, near the bottom. For example, you can change "hh:NN:SS tt" to "HH:NN:SS" to switch to military time format. At the moment, it's only used in the weather and status pages.
+
+ 
+
+The status view code is in "Status\DefaultStatus.c". The lines responsible for displaying data start with "Draw() {" and go to the end of the file.
+
+To move things around, you just need to modify the parameters of the functions responsible for displaying the corresponding data. A quick explanation of the primary display functions follows. If you want to display rectangles, lines, and images, invert text, etc., you should skim over the "Drawing Functions" section of functions.html.
+
+The 3 DisplayText commands are 'DisplayText("text", x, y)', 'DisplayTextRight("text", x, y)', and 'DisplayCentered("text", x, y)'. The difference is where (x, y) is relative to where "Text" is drawn. In the first case, it's the upper left point of the text, for the second, it's to the upper left, and for the third, it's in the center at the top. You can move around text pretty easily by changing which DisplayText function is used and changing the values of the x and y parameters. The text and function names are clear enough that you should be able to figure out which line displays what.
+
+FormatValue(value, x, y) converts a number to a string. x is the minimum number of characters to use, and y is the number of characters to display to the right of the decimal.
+
+FormatSize(value, x, y, z) is similar. It will display things like "15.0 M". x is the minimum unit of measurement to use. 0 is bytes, 1 is kilobytes, etc. y is the number of digits, less 3, to display. FormatSize always displays at least 3 digits. z is 0 if you want " M", 1 for "M", and 2 to leave off the label. The purpose of this function is that for values that can vary a lot, it will always display the same number of characters. From 0 bytes to billions of terrabytes, it will always display y+3 characters. Note that this function defines a MB to be 1024 kB, etc.
+
+To set the range of the network graphs, go to the "Graph(" lines near the top of the file and change the third parameter to what you want the max value to be.
+
+You can also pretty easily add another status screen if you so desire, or add new hard drives, etc, to the existing screens by copying and modifying existing lines. You can also get information from 3rd party applications by adding the line "#requires <Shared Memory.c>", which makes sure the program loads shared memory scripts, and then...
+
+ 
+
+For SpeedFan, add to the Draw() function:
+
+$sfdata = GetSpeedFanData();
+DisplayText(FormatValue($sfdata["temps"][0], 0, 0), x, y);
+DisplayText(FormatValue($sfdata["volts"][1], 0, 2), x, y);
+...
+
+In the first DisplayText line, "temps" means get one of SpeedFan's temperatures. Replace it with "fans" or "volts" if you want those instead. The first 0 is which temp to get, starting from 0. You'll have to play around to figure out which value means what (That's just how SpeedFan works). The third 0 is how many decimal digits you want displayed. Fans are always integers, volts and temps can theoretically have two decimal digits, though they're generally both 0 for temps.
+
+ 
+
+For Everest:
+
+$edata = GetEverestData();
+DisplayText($edata["temp"]["FCPU"]["value"], x, y);
+DisplayText($edata["volt"]["VCPU"]["value"], x, y);
+...
+
+First quoted value is what type of data you want (temp, volt, and fan are the ones I know. Might be others). Next is the value name. I don't have a list, look around in Everest. Next is "value" or "label" for the...umm...value or its text label. You don't need to use FormatValue here, as the values come as pre-formatted strings.
+
+ 
+
+For ATI Tray Tools:
+
+$adata = GetATTData();
+DisplayText($adata["CurGPU"], x, y);
+DisplayText($adata["CurMEM"], x, y);
+...
+
+A list of the values is in "include\Shared Memory.c". Search for "GetATTData" to find them.
+
+ 
+
+For RivaTuner:
+
+$rdata = GetRivaTunerHWData();
+DisplayText(FormatValue($rdata["valueName"][1],0,0), x, y);
+...
+
+"valueName" should be the name of a value in RivaTuner. Valid names depend on what RivaTuner plugins you have enabled. To get a list of values, run the exe in "SDK\Samples\SharedMemory\RTHMSharedMemorySample\Release". The 1 should be a 0 to get the value label, 1 to get the value itself. The second 0 is how many decimal digits you want.

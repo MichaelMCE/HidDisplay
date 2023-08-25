@@ -1,0 +1,319 @@
+<HTML>
+<HEAD>
+ <STYLE type="text/css">
+   .FXN {font-weight: bold; color: #0000C0;}
+ </STYLE>
+ <TITLE>LCD Miscellany 0.4.4 Documentation</TITLE>
+</HEAD>
+<BODY>
+
+<H1>LCD Miscellany 0.4.4 Documentation</H1>
+<a href = "http://www.g15forums.com/forum/showthread.php?t=3957">G15 forums post</a><BR>
+<a href = "http://dwarg.dyndns.org/">LCD Miscellany homepage</a><BR>
+
+<H2>Documentation layout</H2>
+
+<P>This file contains general information about using the pre-existing scripts and modifying the ini.
+
+<P>Quickstart.txt is a quick guide to very simple script modifications, like moving stuff around on the status screen, changing the time/data bar, reordering pages, removing pages, and the like.  It also has some information on the ini as well.
+
+<P>Language.html is an overview of the language itself.  If you have some familiarity with programming, it's not difficult to pick up, though debugging is hard.  The most important part is the section on variable types.
+
+<P>Functions.html has documentation for all the built-in functions.  Event.html and Objects.html will eventually be merged into Functions.html.  Right now they document events and objects added in 0.4.0.0.  Newer objects are documented in Functions.html, as separating objects and functions turned out to be a pointless endeavor.
+
+<H2>General info</H2>
+
+<P>The 4 LCD buttons I'll call, from left to right: up, down, ok, and cancel.  Up is also left and down is right.  As these names indicate, the first two buttons are used mostly for menu navigation and scrolling text, while the other two do everything else.  No matter where you are, pressing cancel repeatedly will always back you out to the main screen and then bring up the quit dialog.  I've tried to make behavior consistent and predictable so that I don't need to use valuable space to label them on the screen.
+
+<P>Starting the application when it's already running will kill the running version and replace it.  This makes testing modified scripts faster.  Different versions may or may not kill each other.
+
+<P><H3>Performance Counters Note</H3>
+
+<P>If HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\Service_name\Performance\Disable&nbsp;Performance&nbsp;Counters is set to 1, performance counters won't work, which are used for some of the displayed values.  Set it to 0 to fix the problem.
+
+<P><H3>Vista Compatibility Note</H3>
+
+<P>You'll need to run the app with administrative privileges for everything to work.
+
+<P><H3>Unicode support</H3>
+
+<P>LCD Miscellany uses UTF8 internally for everything, except where otherwise noted.  Characters that require 2 UTF16 codes are not supported, and will not be handled properly by most of my code.  All characters I've ever come across (Including Japanese and Chinese text) only require 1 UTF16 code, so it's not a serious limitation.  Also, script fonts and right-to-left fonts are not displayed correctly.
+
+<P>While it can display most Unicode characters without a problem, sort operations and case-insensitive comparisons often don't handle non-English characters correctly.  Fixing this isn't a huge priority, but I may get around to it at some point.
+
+<P><H3>Multiple display support</H3>
+
+<P>It will display the same thing on all connected Logitech 160 by 43 LCDs.  When new LCDs are connected, it automatically detects them.  Note that it only detects new hardware LCDs as they're plugged in.  It will not automatically detect new emulator windows.  Displaying different images on different LCDs would be cool, but the audience for it is pretty limited.  May add support later.  If anyone desperately wants support, sending me some Z-10 speakers would probably be the best way to get support added.  :)
+
+<P><H3>Config file</H3>
+
+<P>There are two configuration files: LCDMisc.cfg and LCDMisc.ini.  Scripts appear in other files.  The ini file is meant to be modified by the user and is never overwritten.  The cfg file is overwritten periodically as the program runs and contains things like initial search paths, default timeouts, the last time the temp file cleaner was run, etc.  Scripts can also save values to the cfg.
+
+<P>If you modify the ini, put the modified version in the override directory, so when you upgrade, the program will still use your modified version.
+
+<P>You can copy any variable from the cfg file to the ini file and the ini value will mask the cfg value whenever the application starts.  The application must be restarted for changes to the ini to take effect.  The simplest way to do this is just run the executable again.  It will unload the old process and replace it with a new one.
+
+<P>The config files are looked for in two places: first in the Override subdirectory, and then in the exe's directory.  This allows you to put your own modified ini in the Override directory and then overwrite the original ini when updating without issues.
+
+<P>You can also change the delay for various timers with the ini.  They are all currently in seconds.
+
+<P>Changing many of the values in the cfg file directly will not work; they'll be overwritten with the defaults.  This allows you to just delete/comment out the corresponding entry in the ini file to revert to the default delays, as opposed to having to delete the setting from both files.
+
+<P>For toggled values, 0 is off and 1 is on.  Anything that's not a number will be treated as a 0.
+
+<P>Both files can be in ASCII, UTF-8, or UTF-16 format.  UTF8 files must have the appropriate header bytes ("BOM marker"), otherwise the file is assumed to be ASCII.  Any UTF text editor should handle this appropriately.  The file format is much like that of windows ini files.
+
+<P>% and # are the comment characters when they're the first (non-whitespace) character in a line.  Lines starting with them will be completely ignored.  (In the cfg, such lines will be deleted the next time the file's overwritten.  They'll be left alone in the ini file, of course, as it's never modified by the program).  Any other unrecognized lines won't cause issues, but they'll be loaded into memory and kept there.
+
+<P><H3>License</H3>
+
+<P>Do whatever you want with this.  Distribute it, distribute ini files, scripts, etc.  Just don't claim credit for anything other than writing custom scripts and ini files and don't distribute it using a different application name.  I suggest you keep the original documentation files with it if you choose distribute it.  Also you agree not to sue me if running it causes your computer to develop sentience and go around vandalizing other people's houses or has any other undesired consequences.  The only other constraint I place on you is to only use this software for good, not for evil.
+
+<P>Note that evil uses are allowed for the SABnzbd+ script written by 4wd.
+
+<P><H2>Scripting</H2>
+
+<P>Details one the scripting language are in other files.  This section covers how the root files are set up in the ini file.
+
+<P>The ini's [Script] section specifies basic parameters for the scripting engine.
+
+<P>LoadFile entries specify which script files to load and compile.  The script files can internally reference other files, so you generally only need one LoadFile line, except for stand alone scripts.  Each line specifies one file, but multiple files can be loaded with multiple LoadFile entries.  If multiple files use the same function names, or try and declare functions that have the same names as built-in functions, they will fail to load.  Functions in different files can call each other, and they all share the same global memory space.  If one file fails to load/compile, the others should still work fine.
+
+<P>If ScriptDebug's low order bit is 1, compiled virtual assembly will be written to a secondary log file.  If it's second bit is 1 (Like if it's 2...), compiler messages that are written to a log file will also be displayed on screen.
+
+<P>Optimize enables optimizations in the internal compiler, and is enabled by default.  Only useful to disable if a bug in my optimization code is breaking one of your scripts.
+
+<P>ScriptDebug and optimize both exist primarily for debugging purposes.
+
+<P><H2>Views</H2><BR>
+Note that these descriptions apply to the default scripts only - all described behavior can be changed completely.
+
+<P>The program starts with the menu hidden in the stats view. To quit in menu hidden mode, press cancel to get a dialog and then ok to close the program. To show the menu, just press up/down to navigate, and it will automatically appear. Cancel hides the menu and ok "selects" (Or focuses) the current view.  The menu will automatically hide itself in a couple seconds.  "Selecting" a view hides the menu and allows you to modify (Or whatever) the current view. To return to the menu press cancel. Most views steal some keyboard input when selected (Everything steals escape and the volume wheel, task list, pidgin, text editor, and calculator steal most everything).
+
+<P>It is not always easy to distinguish between when a view is selected (And some or all keyboard input is possibly being stolen) and when it is not.  It is intended for nothing to be selected for the majority of the time.
+
+<P><H3>Stats View</H3>
+
+<P>Shows a number of stats.  Can't be focused, but will switch between different screens when you press ok instead.
+
+<P><H3>Task Manager</H3>
+
+<P>The task manager displays the exe names of all running processes, along with their memory, CPU usage, and process priority.  The CPU usage is percent total CPU time, so all values should add up to 100, ignoring roundoff.  Process priorities are displayed to the left of the process names and range from 1 (idle) to 6 (realtime).  3 is normal, but priorities of 3 are not displayed, to reduce clutter.
+
+<P>Up/down act like page up/down, as do page up/down.  Volume wheel and arrow keys select an item.  Ok brings up a confirmation dialog for killing the selected task.  Cancel unfocuses.
+
+<P>Prev/Next track select sort column, play/pause reverse sort order.  Applications that are equal according to search order are sorted by their previous sort order.  This means, for example, that when sorting by CPU time, processes that recently used a lot of CPU time will stay near the top.  Idle is always first.  Stop takes you to the top of the list.
+
+<P>The previous sort order is saved and restored whenever the application is closed and restarted.
+
+<P>When a process is selected, press 1 to 6 to set its priority to the corresponding value.  Be careful with setting processes to 5 or 6, as high priority applications can cause issues in some cases.  Setting a game to have a priority higher than LCD Miscellany or the G15 profiler, for example, can cause both of them to stop responding for large periods of time.
+
+<P>Processes with a "-" by their name can be expanded (By pressing right) to show the program's visible top-level windows.  You can close these the same way you terminate an app.  Note that some apps may not like having their windows closed that way, particularly windows that don't have a close button, or have a grayed out close button.  Worked fine on all the normal windows I tried it on.  For single window apps, this is a more friendly way of killing them.  They should exit normally, in general, unlike when you kill the app from the task manager.
+
+<P>Typing the name of a listed file will jump to it, much like in Window's explorer, though pressing a letter twice will jump to an item starting with two of that letter, isntead of the second item starting with that letter.  Be aware that this does not work with numbers, as they are used only for setting a process's priority.
+
+<P><H3>Pidgin View</H3>
+Allows you to communicate to other users with Pidgin.  Requires you have the included Pidgin plugin (Written by ThirdMartini) installed, and the url, complete with user name/pass at the bottom of the LCD Miscellany ini, in the urls section.  I strongly recommend you firewall Pidgin, as despite the password, there's no real security there and unlike uTorrent, there's no option to disallow remote connections.  Do not change the default display options in Web Pidgin, as I depend on the default options for parsing through the HTML it generates.
+
+<P>Page up/down, home/end, and up/down arrow keys work as expected, when navigating listed names.  Volume works just like the arrow keys.  Typing the name of a user will jump to that user on the list.
+
+<P>Names of people who have active conversations with you are in bold.  Select a one and press return or button 3 to go to the active chat with a given users.  Buttons 1 and 2 allow you to go through all the users with active chats (chat windows open) and the active user list as well.  Note that when you cloes a Pidgin chat Window, the corresponding chat screen in LCD Miscllany will be closed as well, unless it's the currently active screen.  It will be removed if/when you switch to another screen, unless you reopen the chat window before that.  This behavior also applies when you select a user to start a new chat session with in the user list.
+
+<P>Ctrl-W will attempt to close the currently selected chat screen.  Note that due to how things work, chat screens can only truely be closed when the corresponding Window is closed, so Ctrl-W will close the chat window for a screen, if it can find one.  Otherwise, it will just return to the user list.  Windows cannot be closed it Pidgin is not running locally.  This is a limitation of the Pidgin web plugin I'm using.  Note:  Ctrl-W will only work properly with tabs disabled, so each conversation has its own window.  With tabs enabled, I advise against using control-w.
+
+<P>Ctrl-O will return you to the user list without closing the currently active chat screen (Unless there's no corresponding chat window open, in which case it will be closed automatically).
+
+<P>Ctrl-I will display the name for the currently selected chat for 5 seconds.
+
+<P>The text edtor line has fully cut/copy/paste/undo/redo support (ctrl-shift-z and ctrl-y both act act as redo).  Up/down navigate through previous lines.  Page up/down and the volume wheel scroll the text from the conversation up/down.  Ctrl-home/end go to the top/bottom of the conversation text (Without control, home/end do the same for the text in the text editor at the bottom).
+
+<P>"\" is used to start special commands ("\" is used instead of "/" because Pidgin's IRC support uses "/").  "\ping &lt;ip&gt;" pings the specified IP or DNS and returns the result.  "\dns &lt;ip&gt;" returns the ip for a dns entry or vice versa.  To send a line whose first non-whitespace character is a backslash, use two backslashes.  Note that this particular detail may change in future versions.
+
+<P><H3>IRC View</H3>
+
+<P>Disabled by default, modify "include\LCDMisc Script.c" to use.  Works much like pidgin screen, except commands can start with either "/" or "\".  Note that all commands are case insensitive.  There's a root screen, which only supports "/server <ip>:<port>" (Port is optional), which opens a connection to a new server, and creates a new "window" for the server.  /server can also be used in any other IRC window.
+
+<P>Each connected server has one server window and a variable number of channel windows.  Standard IRC commands should all work.  CTCP is not currently supported.  Automatic channel rejoining is supported.
+
+<P>Non-standard IRC commands you can use:  /me, /server, /connect, /disconnect, /ping, /dns, and /calc.
+
+<P>/me does the same thing as it does with mIRC.  (Why do I call it non-standard?  It's not an IRC command at all, it maps to a CTCP command, which is a protocol that sits on top of IRC).
+
+<P>/server was already described.
+
+<P>/connect and /disconnect connect and disconnect from a server.  You must call them from a server window or a channel window (Not the root window), and it will disconnect or connect to the associated server.  /connect is ignored when already connected.
+
+<P>/ping pings the specified IP or DNS (Not user) using a TCP/IP ping (Not a ping passed through IRC).
+
+<P>/dns looks up a DNS or IP address, and returns the IP or DNS.
+
+<P>/calc passes the rest of the line to the calculator and displays the result locally, so you won't say the result in the channel.  /eval is the same as /calc.
+
+<P><H3>Media View</H3>
+
+<P>Simple media view.  Currently only only has an interface to control VLC, MPC, and WinAmp.  WinAmp requires you copy the included general purpose dll to its plugins directory.  MPC and VLC require you to enable their http interface.  By default, MPC is checked for locally on port 8082 and VLC on 8080.  You can change port or even configure LCD Miscellany to communicate with them on different computers over a network by modifying the corresponding entry in the [URLs] section at the bottom of LCDMisc.ini.
+
+<P>To enable VLC's http interface, go to tools->preferences->show all settings->interface->main interfaces and check http.
+
+<P>To select a player, go to the media player screen and then focus the page for the media player you want.  When visible, the volume knob and all media keys affect only the selected media player (Pressing control or shift+media keys will modify system volume, or whatever else is listening).  Pressing ok again lets you highlight several objects on the media display itself.  Use the volume wheel to quickly scroll through values for the selected object.
+
+<P>LCD Miscellany can also play media files itself, but it currently lacks an interface to locate files.  An interface may be added to do this for both the internal player and Winamp/MPC/VLC in a future release.  I intend this interface to allow both modifying/jumping around in the current playlist (In media players that support it - MPC does not) and to select files to add to/replace the current playlist.
+
+<P>May add support for WMP.  Note that the media view isn't meant to compete with the very nice media-focused mods out there, like Okio's WVS or Thunderstruck's Itunes mod.  It's meant instead to provide basic functionality along with the ability for a lot of customization.
+
+<!--It supports m3u playlists and whatever audio file types you have DirectShow codecs installed for.  Only files with extensions listed in the ini are shown.  It can actually play the video of some types of files (On a monitor, not the LCD screen), but I don't recommend it.
+
+<P>To pick a file/playlist, highlight the name of the currently playing file and press ok to get to a directory selection screen.
+
+<P>For all the other values, use the LCD buttons to select a value and the volume wheel to change it.  The selectable values are, in order (Not including file name):  place in file, left/right balance, repeat mode, and volume.  There are 3 play modes:  play once, repeat, and shuffle.  Shuffle can only be selected when playing m3u play lists.  I hook all media buttons except mute while the view is focused.  Next/prev track select the next (non-playlist) file in the current directory when no playlist is selected.  I will probably add directory shuffle/play through options at some point.
+
+<P><H3>Volume Control</H3>
+
+<P>In the volume control, use up/down to navigate. Ok selects the device and increases values by a very small value. The volume control increases/decreases values much faster. The first thing on the list is the audio device, of which you probably only have one (Unless you have onboard audio and a card and both are active). The next is what destination line you're playing with (Usually just output volume controls and recording controls). Then comes what input line you're playing with (Wave, midi, CD, master controls, etc). Next is the actual value you want to modify (input source, volume, mute, etc), and then are the actual values for each channel. Often, there is an all channels control, too.
+-->
+
+<P><H3>Text editor</H3>
+Edits text.  Currently cannot create files, can only load existing files.
+
+<P>Has two types of sub-screens, a browser screen for locating/opening files and an editor screen for displaying and editing the contents of files.  Buttons 1 and 2 navigate between the browser and all open edit screens.  More than one file can be open at a time.  You can currently have multiple editors open for a single file, so be careful.
+
+<P><B>Browser screen:</B> Use the mouse wheel, arrow keys, page up/down, or type in the name of a file to navigate.  Folders are in bold, drive names are at the bottom.  Press open or LCD button 3 to open a file.
+
+<P>The browser screen performs other functions as well.  Ctrl-R brings up a run dialog box, filled with the highlighted file name/path.  Up/down navigate through the last 50 things run this way.  Escape or and LCD button cancels.  F2 will let you rename the currently selected item.  Delete or backspage will bring up a delete confirmation.  Note:  Will not recursively delete directories, just to be on the safe side.
+
+<P><B>Editor screen:</B>Ctrl-s saves, ctrl-w closes the current file without saving.  Cut/copy/paste/undo/redo all supported.
+
+<P>Unlike most text editors, the word wrap line breaks act as characters when moving the cursor.  Saves UTF8 files.  Some simpler text editors may have trouble reading the first 3 bytes, whihc identify it as a UTF8 file, but should still be able to handle everything else.
+
+
+<P><H3>Calculator</H3>
+
+<P>Acts like a calculator.  To focus/unfocus the calculator, press ok/cancel.  To evaluate an expression, just type it in, like "1+20*5-3*(sqrt(4*5)-4)".  Supported operators are +, -, *, /, and ^ (exponentiation).  All built-in single argument procedures, like sqrt(), exp(), log(), log10(), sin(), etc. can be used.  To use the previous result, start an expression with one of the supported operators, like "+10".  Be careful.  "-10 + 2" will subtract 8 from the previous result, while " -10 + 2" will just return -8.  Other than in that one case, whitespace is ignored.
+
+<P>Press up/down to move through previous results and operations (Though some roundoff may occur).  Press enter to evaluate the previous operator, or, when the command line is blank, apply the previous operation again.
+
+<P>Its text edtor has fully cut/copy/paste/undo/redo support (ctrl-shift-z and ctrl-y both act act as redo).
+
+
+<P><H3>RSS Viewer</H3>
+
+<P>Supports display of one or more RSS channels.  Currently can only add one RSS channel to the ini, for more, must modify "LCDMisc Script.c".  Displays scrolling channel/item titles and (optionally) descriptions as well.  Press button 3 to open the url for the item/channel whose name is currently displayed at the top of the screen.  When the name is changing, the url for the new one will be openned.
+
+<P>Compatible with RSS 2.0 and RSS 1.1.  Will also display channel and item info for RSS 1.0, but won't order channel names and items properly for feeds with multiple channels, as the format is needlessly complicated and I can't be bothered to write the extra 20 lines of code this needs.  No clue about RSS versions 0.90, 0.92, 0.93, and 0.94.  I believe it works with RSS 0.91.  RSS 2.0 seems to be by far the most common, anyways.
+
+<P>Updates each feed according to its ttl value, or once every hour if no ttl is given.
+
+<P><H3>Clipboard Viewer</H3>
+
+<P>Allows viewing text, file names, or images contained in the clipboard.  Other data types are not supported.  If you hold control-c down for a while, something might be copied to the clipboard while I'm trying to read it, and you may get an error message.
+
+<P>Scroll images in/out using up/down. It can't read images highlighted and copied from a web browser, as they're copied to the clipboard as HTML.  Arrow keys scroll an image.
+
+<P>Volume wheel scrolls text when the view is focused.
+
+
+<P><H3>uTorrent Viewer</H3>
+
+<P>Shows current/previous torrent downloads while utorrent is running.  The used url, complete with port and usename/pass is in the URLs section of the ini (default port is 35140, username/pass is goat/cheese).  For this screen to work, you need to have the webui enabled in utorrent, though you don't need to have the web ui zip installed.
+
+<P>Displays the name, status (C = complete, D = downloading, S = seeding, E = error, P = paused, H = halted, Q = queued, V = verifying) of all torrents.  Sort order is not the same as in uTorrent.  Focus the screen, use volume control to navigate.  Stop stops a download, and play/pause starts/queues/pauses a download.
+
+
+<P><H3>SABnzbd+</H3>
+
+<P>Displays download information from SABnzbd+, a newsreader.  The view was written by 4wd.  The url is at the bottom of the ini.
+
+<P><H3>Weather Viewer</H3>
+
+<P>Displays current/future weather information.  To configure it, go to weather.yahoo.com, locate the weather for your area, and click on the orange RSS button.  Put a copy of "LCDMisc.ini" in the Override subdirectory (Making the directory if it doesn't already exist).  Go to the [URLs] section of the ini and put in the RSS page's URL.  The modified ini will not be overwritten when you upgrade to the next release of the mod.  You can switch from F to C by modifying the url.
+
+<P>Currently nothing else you can do at the page.  It's automatically updated once every 30 minutes, but only when the view is visible, so it takes a few seconds to update when you bring it to the front.  Despite the delay, I prefer this method as it results in fewer pointless http requests and more current weather data when you are viewing the screen.
+
+<!--<P><H3>Text Editor</H3>
+
+<P>Allows you to edit text files.  Currently, there is no "save as" option, so you have to load an existing file if you wish to save your work.  ctrl L/S is save (Over the old file)/load.  Support cutting/copying/pasting.  Unlimited undo buffer size.
+
+<P>Can't display Unicode text, but can save it as a UTF8 file.  Probably can't type non-ASCII text, but I'm not positive.
+
+<P>Currently saves all files with high-ASCII as UTF8 files.  Will be fixed in a future version.
+
+<P>A number of standard shortcuts work:  ctrl-x/c/v, ctrl-z/y, ctrl-shift-z (Both ctrl-y and ctrl-shift-z are redo), ctrl-a, ctrl-home/end, ctrl-left/right.  Will probably add a few more later.  LCD buttons do nothing, except cancel.
+
+<P><H3>File browser</H3>
+
+<P>Used by the text editor and media player.  Works like the task manager.  The list is updated when you scroll, so there's no refresh button.  Press ok to select a file.  up/down are page up/down, wheel is up/down.  Only known media types are displayed for the media player (These extensions can be edited).
+-->
+<P><H2>Other stuff</H2>
+
+<P><H3>Tray Icon</H3>
+
+<P>If you change the value of "Tray Icon" in the ini file from 0 to 1, an icon will be displayed on the system tray.  At the moment, the only option in its context menu is "quit".
+
+<!--You can enable an alert when your local/remote IP/DNS changes in the config file as well.  Both these options are disabled by default.-->
+
+<!--
+<P><H3>Temp Folder/File Cleaner</H3>
+
+<P>The app can also periodically delete temporary files.  The [Cleanup] section of the config file has two entries:  TempDirs, which is a comma delimited list of files\folders to be checked (Don't use quotes in paths with spaces), and "Minimum Age", which is the minimum age (in seconds) of files to delete (86400, the default, is 1 day).
+
+<P>Each entry in the TempDirs list can be preceded by a & and/or an *.  A & means that the program will try and clear the system and read only flags of files that have them set before deleting them.  Otherwise, both types of file are ignored.  * means to recurse through subdirectories.  Without an *, empty subdirectories will be deleted, but it will not delete files in any subdirectories.
+
+<P>Both files and folders can be listed.  If a folder is listed, it should end with a '\' unless you want the temp folder itself to be deleted, too.  The * and ? wild cards can be used in file names (Though not folder names).
+
+<P>By default, it runs once a day (And does nothing.  The relevant line is commented out).
+
+<P>Note that the temp file cleaner is not constrained by the 256 character path limitation, so if you run across files explorer won't let you delete because of path length, you can try adding an entry for them.  For simplicity, most of my other code won't handle longer path names, however.
+-->
+
+<P><H3>Keyboard Shortcuts</H3>
+
+<P>The Shortcuts section of the config file lists key combinations and what application they launch (Applications can be urls, paths, and data files with associated executables in addition to executables).  Each line is in the format: &lt;modifiers&gt;&lt;key&gt; = &lt;command&gt;.
+
+<P>Modifiers can be one or more of:
+<BR>@ (Windows key)
+<BR>! (Alternate)
+<BR>^ (Control)
+<BR>+ (Shift)
+
+<P> Key is either the character associated with a key (letter, number, symbol, etc.  Note that it's shift state is ignore.  'a' and A' are treated the same, as are '2' and '@', etc).  For the numeric keypad, prefix the keys with num.  Num1, num2, num+, num-. numplus, numdel are examples of keys on the numeric keypad (The values are not case sensitive).  There doesn't seem to be any keycode for the numeric keypad's enter key.  For other keys, type in the key's name (caps/capslock, home, pgup/down, etc).
+
+<P> Command should be a file, an executable with parameters, a url, or something else that windows knows what to do with.  If it is a path/file name that has spaces in it, the entire path must be in quotes (This is so I can tell what's the file name and what are the parameters).  There are some examples in the config file (Disabled, of course, so as not to conflict with anything).
+
+<P> Command can also be a scripted function.  You currently cannot pass any arguments this way.  Specify a function like "FunctionName()".
+
+<P> This should not conflict with any other shortcut programs you are running (Unless you set a single hotkey with both programs).  My modifier codes (With the exception of @) are stolen from Autohotkey (Which I used to use.  Doesn't take up much memory, but adding hotkeys to this was simple and saves a couple MB RAM).
+
+<P> The G keys cannot be set to do things this way.  The reason I prefer to use the windows key for launching applications is all my keyboards have a windows key and I've been using it for shortcuts for years.  Including the functionality I need here saves me a couple MB RAM.  The shortcut code has no CPU overhead (Except a very small amount of time when loading the config file and launching shortcuts), and very little memory overhead.
+
+
+
+<P>
+<H2>Credits</H2>
+(In alphabetical order, by "last name")<BR>
+<H3>Contributers</H3>
+<P><B>4wd</B> wrote the SABnzbd view.  Also gave me a pointer to info on the JSON encoding format.
+<BR><B>Bob Jenkins</B> wrote the open source <a href="http://burtleburtle.net/bob/hash/doobs.html">hash function</a> I use in my string tables.
+<BR><B>Third Martini</B> wrote the included WebPidgin plugin.
+<BR><B>Macfox</B> fixed the VLC script so it's faster and works with version 1.0.
+<BR><B>Interceptor One</B> designed the basic layout of the media page.
+<BR><B>Yuji Oshimoto</B> created the 04b08 and 04b03 fonts.  Both are used by the default scripts and included in the Install directory.  04b08 is also built into the executeable.
+<BR><B>Planez</B> fixed the MPC script's next/prev track behavior.
+<BR><B>Pleh</B> wrote the torrent status code (In another language, of course. I translated it).
+<BR><B>Skitzman69</B> wrote GetATTData() in Shared Memory.c.
+<BR><B>sub010</B> created the 6px2bus font.
+<BR><B>tfwarlord</B> made the weather Celsius icon (And thanks to him for some debugging feedback, and a couple other suggestions, especially for the weather screen).
+<P>
+<H3>Thanks to</H3>
+<P><B>Abraham</B> for helping me debug G15 V2 support.
+<B>id2433</B> for info on the G15 lights.
+<BR><B>McDope</B> for helping in debugging and his nifty TeamSpeak plugin.
+<BR><B>Dan Moulding</B>, author of <a href="http://www.codeproject.com/tools/visualleakdetector.asp">Visual Leak Detector</a>.
+<BR><B>irreal</B> for his nifty little KeyState app, which inspired the KillCaps() script.
+<BR><B>lalakobe</B> for helping find a pair of bugs.
+<BR><B>Philip Lawatsch</B>, <B>Alex Ibrado</B>, and <B>Anthony J. Mirabella</B>.  Authors of libg15, which contains information on communicating directly with the g15.
+<BR>The authors/maintainers of the <a href="http://tangentsoft.net/wskfaq/">Winsock Programmer's FAQ</a>.  Used as a reference to the new ping function, though I don't use any of their code.
+<BR><B>Okio</B> pointed out a couple issues with the first release of 0.4.0, and provided some useful technical information.
+<BR><B>Mat-d-Rat</B> for pointing out a bug in my Speed Fan code.
+<BR><A href="http://www.wotsit.org/"><B>wotsit.org</B></A> for the very handy collection of file format specifications.
+</BODY>
+</HTML>

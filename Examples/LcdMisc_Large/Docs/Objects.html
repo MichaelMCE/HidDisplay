@@ -1,0 +1,168 @@
+<HTML>
+<HEAD>
+ <STYLE type="text/css">
+   .FXN {font-weight: bold; color: #0000C0;}
+
+div {
+  border-width: 1px;
+  border-color: #0000FF;
+  border-style: solid;
+  background-color: #EEEEFF;
+  padding: 10px;
+}
+  </STYLE>
+ <TITLE>LCD Miscellany Object Reference</TITLE>
+</HEAD>
+<BODY>
+
+<H2>Object Reference</H2>
+Built in objects are only used for objects that contain complicated data types that don't lend themselves well to being handled using script objects.
+
+<P>
+<div>
+<B>Image</B><BR>
+The Image class contains 1-bit images used for drawing to the LCD.  The small size allows drawing functions to draw 32 pixels at a time and keeps memory usage down.  No fields are currently accessible.  Image drawing functions are covered in the Function documentation.
+
+<P><pre>
+struct Image {
+     function Size();
+};
+</pre>
+
+<div><B>Image Constructors</B><BR>
+<P><SPAN class="FXN">LoadImage</SPAN> (name, zoom, dither)<BR>
+Loads an image from a file and returns a Image object.  Name is the file name containing either an absolute path, or a path relative to the executeable.  If zoom is 0 (not given) or 1, the image is not zoomed.  Values between 0 and 1 shrink the image.  If dither is 0, the average color of the image is used as a black/white cutoff.  If dither is from 1 to 255, that value is used as a cutoff instead.  If dither is -1, a dithering scheme is used.Otherwise, it's the value used as the cutoff (Color values range from 0 to 255).
+
+<P>Currently png, jpeg, gif, bmp, and tga file formats are supported.  Only the first image of animated gifs will be loaded.  A return value of null indicates a failure to load the image for some reason (Can't open/read from the file or it's not a recognized image format).  Images are stored as 32-bit aligned 1-bit images, so loading a lot of images and keeping them around shouldn't take up too much memory (So a 160 by 43 image takes up under 1.4k RAM).  File extension is not used to determine file type.
+
+<P>When name is a relative path that doesn't start with a '.' (As in ".\" or "..\"), "Override\&lt;name&gt;" is checked before "&lt;name&gt;".  This allows you to override the default images and not have to be careful when updating (or downgrading) LCD Miscellany and its default scripts and images.
+</P>
+<SPAN class="FXN">LoadMemoryImage</SPAN> (string, cutoff, zoom)<BR>
+Loads an image from a string.  Just like the previous function, except the image file must be loaded into a string in memory.
+</div>
+<BR>
+<div><B>Image Functions</B><BR>
+<SPAN class="FXN">Image.Size</SPAN> ()<BR>
+Returns the dimensions of an image, as the list (width, height).
+</div>
+</div>
+<P>
+<div>
+<B>Image32</B><BR>
+Despite the name, the Image32 structure contains 8 bit per channels images, with 1 to 4 channels (grayscale, gray+alpha, RGB, and RGBA).  At the moment, they're not terribly useful, but they can be zoomed, saved as BMPs, and clipboard images are returned as Image32s.  Currently, Images can not be converted into Image32s, but the reverse is possible.
+
+<P><pre>
+struct Image {
+	function Size();
+	function Zoom(zoom);
+	function ToImage(zoom, cutoff);
+	function SaveBMP(name);
+};
+</pre>
+
+<div><B>Image32 Constructors</B><BR>
+<P><SPAN class="FXN">LoadImage32</SPAN> (name)<BR>
+Loads an image from a file and returns an Image32 object.  Name is the file name containing either an absolute path, or a path relative to the executeable.  Supports the same formats LoadImage() does, as LoadImage uses LoadImage32 internally.
+
+</P><SPAN class="FXN">LoadMemoryImage32</SPAN> (string)<BR>
+Loads an image from a string.  Just like the previous function, except the image file must be loaded into a string in memory.
+</div>
+<BR>
+<div><B>Image32 Functions</B><BR>
+<P><SPAN class="FXN">Image32.Size</SPAN> ()<BR>
+Returns the dimensions of an image, as the list (width, height, channels).
+<P><SPAN class="FXN">Image32.Zoom</SPAN> (zoom)<BR>
+Zooms the image by the specified factor, returning a new Image32 with the same number of channels.
+
+<P><SPAN class="FXN">Image32.ToImage</SPAN> (zoom, cutoff)<BR>
+Zooms the image and returns an Image, which can be used for drawing.  Zoom and cutoff works as with LoadImage().  Note that "x.Zoom(0.5); x.ToImage();" and "x.ToImage(0.5);" will not necessarily return the exact same image, as the second function will create a grayscale image of x and then zoom it, while the former will zoom the channels independently, and then convert to grayscale.  In general, the difference is negligible.
+
+</P><SPAN class="FXN">Image32.SaveBMP</SPAN> (name)<BR>
+Saves the image as a 24-bit BMP to the specified file.  Alpha channel is ignored.
+</div>
+</div>
+<P>
+<div>
+<B>IP Addresses</B><BR>
+IP Addresses are used in DNS lookups and pings.  In the future may be used for socket connections.
+
+<P><pre>
+struct IPAddr {
+     function GetString();
+     function PingWait(timeout, ttl);
+     function GetDNSWait();
+
+};
+</pre>
+
+<div><B>Constructors</B><BR>
+<P><SPAN class="FXN">IPAddr</SPAN> (ip, protocol)<BR>
+Creates an IPAddr structure from the specified ip.  Only works with IPv4.  Protocol only really matters if used later to initiate a connection (Which is not yet possible, anyways).  Protocol is an integer and should be one of the values that can be used in the ai_protocol field of the addrinfo structure.  0 or 6 correspond to TCP/IP and 17 is UDP.  Returns null on failure.
+</P><SPAN class="FXN">IPAddrWait</SPAN> (dns, protocol)<BR>
+Looks up all the ip addresses associated with a dns address and returns them in a list of IPAddrs.  dns can also be an ip, though using IPAddr is more efficient when given an IPv4 ip.  This should work with both IPv4 and IPv6, though IPv6 is untested.  Protocol works as with IPAddr().
+</div>
+<P>
+<div>
+<P><B>IPAddr Functions</B><BR>
+<SPAN class="FXN">IPAddr.GetString</SPAN> ()<BR>
+Returns IP Address as a string, for display.  These strings cannot be used in place of an IPAddr, but they can be used with IPAddrWait() (Or IPAddr() for IPv4 addresses) to recreate an IPAddr object.
+
+<P><SPAN class="FXN">IPAddr.GetDNSWait</SPAN> ()<BR>
+Looks up the DNS associated with an IP address.  Under Vista and XP SP2, should be able to look up unicode DNSes, limited to ASCII under earlier OSes.
+
+<P><SPAN class="FXN">IPAddr.PingWait</SPAN> (timeout, ttl)<BR>
+Pings the IPAddr's IP.  Returns the round trip time, in milliseconds, as an integer on success.  Timeout should be in milliseconds, ttl in hops. Default timeout is 5000 milliseconds (5 seconds), and default ttl is 60 hops.
+
+<P>Timeout is only checked for once every second, so it can return values greater than the specified timeout period.  Also, it relies on Windows messaging for learning when data is ready to be read, so the reported pings values are a bit larger than your actual ping.  The worst case scenario for this can be seen by pinging yourself.  Reported ping times are also affected by running scripts.
+
+</P>Returns a string with a short description of the error (About 8-10 characters) or null on failure.  The recommended way to test for an error is by using IsInt() to check for success.
+</div>
+</div>
+<P>
+<div>
+<B>Performance Counters</B><BR>
+PerformanceCounter objects allow monitoring of Windows performance counters.  There are two basic types:  Singletons and collective counters.
+
+<P> All collective objects share the same data, which saves resources if multiple scripts listen to the same set of counters.  However, collective objects cannot be updated directly by a script; instead they are automatically updated every second.  Currently, the only way to stop collective objects from updating is to destroy all copies of them.
+
+<P> Singleton objects can be updated on the one-second schedule as well, but do not have to be.  They can also be updated on demand.
+
+<P>Note:  The two advantages of autoupdating are that it results in fairly consistent updating without using lots of timer objects and that related counters will be read together, saving significant CPU time.
+
+<P>The two main purposes of singleton counters are for longer-term stat collection and when you want to be able to update a set of counters quickly.  The Task Manager uses 3 of them so it can disable them when not visible, but update them all immediately to get an updated task list once it's shown.  Once shown, the Task Manager switches them all to autoupdate on the 1 second timer to reduce CPU usage.
+
+<P><PRE>
+struct PerformanceCounter {
+     function PerformanceCounter(object, instance, counter, singleton);
+     function GetValue();
+     function Update();
+     function SetAutoUpdate(val);
+     function GetParameters();
+     function IsUpdated();
+};
+</PRE>
+<div>
+<B>Constructor</B><BR>
+</P><SPAN class="FXN">PerformanceCounter</SPAN> (object, instance, counter, singleton)<BR>
+Starts listening to a performance counter.  To see a list, go to control panel > Administrative tools > performance > click the + on the toolbar.  Counter values are automatically updated about once per second.  If singleton is 0, it's a collective object.  If singleton is 1, it's a singleton object.  By default, all values are updated once per second, even if no script is reading from them.  Singleton autoupdates can be cancelled.
+</div>
+<P>
+<div>
+<B>Methods</B><BR>
+<P><SPAN class="FXN">PerformanceCounter.GetValue</SPAN> ()<BR>
+Gets the current value of the counter.  If it was created with an instance of "*", a dictionary containing all instances is returned.  Otherwise, it's a double.  On failure, returns null.
+<P><SPAN class="FXN">PerformanceCounter.GetValueList</SPAN> ()<BR>
+Same as GetValue(), except that.  If it was created with an instance of "*", a list is returned.  The list is ordered (name1, value1, name2, value2, ...).  The advantages of doing this are this this works when entries share names and lists are faster than dictionaries.  On failure, returns null.
+<P><SPAN class="FXN">PerformanceCounter.Update</SPAN> ()<BR>
+Updates a singleton value immediately.  Returns 0 on failure and 1 on success.  Note that some values involve division by a time.  When the difference in time would result in a division by 0, the counters are not actually updated.  Note that this can be called on singleton objects when autoupdate is enabled.
+<P><SPAN class="FXN">PerformanceCounter.SetAutoUpdate</SPAN> (val)<BR>
+If val is 0, disabled autoupdate of a singleton object.  If val is 1, enables it.  Returns the old value of AutoUpdate (1 if enabled, 0 if not).  When called on a collective object, return null.
+<P><SPAN class="FXN">PerformanceCounter.GetParameters</SPAN> ()<BR>
+Returns a list containing values used to create the performance counter.  As these never change, not terribly useful except for debugging.
+</P><SPAN class="FXN">PerformanceCounter.IsUpdated</SPAN> ()<BR>
+Returns 1 if the performance counter has been queried with GetValue() or GetValueList() since the counter was last updated.  Returns 0 otherwise.  Note that its value is based on whether the value of this specific copy of the counter has been updated, so is unaffected by whethere or not it is a singleton counter.  Querying a value that has been read takes very little time, so this is a fairly useless function if you just want to read the value of, say, a CPU usage counter.  However, if you do significant processing on the result, such as the Task Manager View does, this can be useful, particularly when refreshing quickly.  CPU usage of the scripted Task Manager View was never bad, but this brings its CPU usage down to about what the non-scripted version used.
+</div>
+</div>
+
+</BODY>
+</HTML>
