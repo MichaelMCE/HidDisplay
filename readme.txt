@@ -36,15 +36,16 @@ Changed both to:
 
 Now we're ready:
 1) Open Teensy/config.h - Select controller and preferences.
-2) Compile & Upload the teensy/teensy.ino firmware.
-3) Reconnect the Teensy.
-4) Install the Desktop libusb0 based driver by using the included Inf-Wizard.
+2) Select USB Type: Arduino Tools menu -> USB Type -> Raw Hid 512
+3) Compile & Upload the teensy/teensy.ino firmware.
+4) Reconnect the Teensy.
+5) Install the Desktop libusb0 based driver by using the included Inf-Wizard.
    Open Inf-Wizard.exe then select the Teensy RawHid interface 0 device.
    Select "Install now". You can always 'Roll back' afterwards. No need to save the driver.
-5) Reconnect the Teensy
+6) Reconnect the Teensy
 
 Teensy is now ready to receive video frames.
-Checkout UsageExample/LCDMisc_Plugin/TeensyRawHid.c as a starting point.
+Checkout Examples/LCDMisc_Plugin/RawHid.c as a starting point.
 
 
 
