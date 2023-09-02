@@ -9,8 +9,8 @@ https://sourceforge.net/projects/gcc-win64/files/13.2.0/gcc-13.2.0-no-debug.7z/d
 
 Install:
 Unpack this somewhere, eg; c:\mingGw\<the unpacked files>
-Edit gccpath.bat then enter edit CMPPATH to the above folder.
-Copy gccpath to c:\windows directory.
+Edit gccpath.bat then edit CMPPATH to the above folder.
+Copy gccpath.bat to c:\windows directory.
 
 Compile:
 Open a command prompt (type 'cmd' in explorer).
