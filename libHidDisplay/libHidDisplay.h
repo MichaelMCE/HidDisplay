@@ -78,13 +78,11 @@ typedef struct _TeensyRawHidcxt_t{
 }teensyRawHidcxt_t;
 
 
-
+int libHidDisplay_OpenDisplay (teensyRawHidcxt_t *ctx);
+int libHidDisplay_CloseDisplay (teensyRawHidcxt_t *ctx);
 
 int libHidDisplay_Open (teensyRawHidcxt_t *ctx, const uint32_t interface, uint32_t deviceIndex);
 int libHidDisplay_Close (teensyRawHidcxt_t *ctx);
-
-int libHidDisplay_OpenDisplay (teensyRawHidcxt_t *ctx);
-int libHidDisplay_CloseDisplay (teensyRawHidcxt_t *ctx);
 
 int libHidDisplay_GetConfig (teensyRawHidcxt_t *ctx, rawhid_header_t *desc);
 int libHidDisplay_WriteImage (teensyRawHidcxt_t *ctx, void *pixelData);
@@ -107,6 +105,11 @@ int libHidDisplay_GetReportWait (teensyRawHidcxt_t *ctx, touch_t *touch);
 
 // is also called automatically at libHidDisplay_Close[Display]()
 void libHidDisplay_WriteImageAsyncStop (teensyRawHidcxt_t *ctx);
+
+
+// work in progress
+int libHidDisplay_DrawOpsCommit (teensyRawHidcxt_t *ctx, void *drawOps, const int drawOpsLen, const int totalOps, const int refId);
+int libHidDisplay_DrawClutCommit (teensyRawHidcxt_t *ctx, void *colTable, const int colTotal, const size_t colTableSize, const uint16_t refId);
 
 
 #endif

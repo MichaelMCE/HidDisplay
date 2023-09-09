@@ -12,11 +12,18 @@
 #define RAWHID_OP_WRITETILE		6
 #define RAWHID_OP_TOUCH			7
 #define RAWHID_OP_SERIAL		8
+#define RAWHID_OP_PRIMATIVE		9
+#define RAWHID_OP_COLLUT		10
 
 #define RAWHID_GFX_CLEAR		1		// clear internal buffer with colour n, don't update display. .var16[0]/16bit colour, .var32[0]/24/32bit colour
 #define RAWHID_GFX_SCROLL		2		// hardware scroll buffer n rows/cols. only if display support scroll
 #define RAWHID_GFX_ROTATE		3		// hardware rotate. .var8[0]/rotation (0 to 3)
 #define RAWHID_GFX_BACKLIGHT	4		// panel backlight brightness. .var8[0] (0 to 127)
+
+
+#define RAWHID_DRAW_RENDER		0x01	// commit to render immediately
+#define RAWHID_DRAW_STORE		0x02	// store instructions (ops) for later processing, respond with a refId
+#define RAWHID_DRAW_REFID		0x04	// client has requested a reference Id
 
 #define RAWHID_BPP_1			1
 #define RAWHID_BPP_4			2
@@ -55,7 +62,6 @@ enum _touchdir {		// touch rotate direction
 	TOUCH_DIR_SWAP_A_INVERT_V,	// swap axis then invert vertical axis
 	TOUCH_DIR_SWAP_A_INVERT_H,	// swap axis then invert horizontal axis
 };
-
 
 typedef struct _touch {
 	uint8_t idx;		// points to which multi point register we wish to read
@@ -128,8 +134,17 @@ typedef struct _header_t {
 		}serialid;
 
 		struct {
-			int stub;
+			uint32_t stub;
 		}layers;
+
+		struct {
+			uint16_t colTotal;		// number of colours possible in table
+			uint16_t colTableSize;
+			
+			uint16_t refId;			// client supplied reference id
+			uint8_t unused1;
+			uint8_t unused2;
+		}collut;
 
 		struct {
 			uint16_t x1;
@@ -140,6 +155,19 @@ typedef struct _header_t {
 			uint32_t len;			
 		}write;
 
+		struct {
+			uint16_t total;			// total number of draw ops (instructions) that follow
+			uint16_t length;		// sum length of instructions (ops) + data, which is the size of the read() which follows
+			
+			uint32_t crc;			// crc of the instructions+data buffer
+			
+			uint8_t	 flags;			// RAWHID_DRAW_
+			uint8_t  unused1;
+			uint16_t refId;			// 
+			
+			uint8_t  var8[8];		//
+		}drawop;
+		
 		struct {
 			uint8_t  op;
 			uint8_t  var8[7];

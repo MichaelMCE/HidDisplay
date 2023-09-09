@@ -53,6 +53,8 @@ struct usb_device *find_TeensyRawHid (teensyRawHidcxt_t *ctx, int index, const i
 
 int libHidDisplay_GetDeviceTotal (const int interface)
 {
+	libHidDisplay_Init();
+	
     struct usb_bus *usb_bus;
     struct usb_device *dev;
     struct usb_bus *busses = usb_get_busses();
@@ -147,6 +149,11 @@ int libHidDisplay_CloseDisplay (teensyRawHidcxt_t *ctx)
 	return libHidDisplay_Close(ctx);
 }
 
+static int libHidDisplay_ReadData (teensyRawHidcxt_t *ctx, void *data, const size_t size)
+{
+	return usb_bulk_read(ctx->usb_handle, LIBUSB_ENDPOINT_READ, (char*)data, size, 400);
+}
+
 static int libHidDisplay_WriteData (teensyRawHidcxt_t *ctx, void *data, const size_t size)
 {
 #if (!USE_WRITE_ASYNC)
@@ -167,11 +174,6 @@ static int libHidDisplay_WriteData (teensyRawHidcxt_t *ctx, void *data, const si
 #endif
 }
 
-static int libHidDisplay_ReadData (teensyRawHidcxt_t *ctx, void *data, const size_t size)
-{
-	return usb_bulk_read(ctx->usb_handle, LIBUSB_ENDPOINT_READ, (char*)data, size, 400);
-}
-
 static uint32_t calcWriteCrc (const rawhid_header_t *desc)
 {
 	uint32_t crc = desc->op ^ desc->flags;
@@ -180,6 +182,65 @@ static uint32_t calcWriteCrc (const rawhid_header_t *desc)
 		crc ^= desc->u.crc.val[i];
 		
 	return crc;
+}
+
+int libHidDisplay_DrawOpsCommit (teensyRawHidcxt_t *ctx, void *drawOps, const int drawOpsLen, const int totalOps, const int refId)
+{
+	//printf("libHidDisplay_DrawCommit %i %i %i\n", drawOpsLen, totalOps, refId);
+	
+	char buffer[ctx->wMaxPacketSize];
+	memset(buffer, 0, sizeof(buffer));
+		
+	rawhid_header_t *desc = (rawhid_header_t*)buffer;
+	desc->op = RAWHID_OP_PRIMATIVE;
+	desc->u.drawop.total = totalOps;
+	desc->u.drawop.length = drawOpsLen;
+	desc->u.drawop.flags = RAWHID_DRAW_STORE | RAWHID_DRAW_REFID;
+	desc->u.drawop.refId = refId;
+	desc->crc = calcWriteCrc(desc);
+	
+
+	if (libHidDisplay_WriteData(ctx, buffer, sizeof(rawhid_header_t)) == sizeof(rawhid_header_t)){
+		// todo: check return, ensure everything was sent
+		int ret = libHidDisplay_WriteData(ctx, drawOps, desc->u.drawop.length);
+		if (ret != (int)desc->u.drawop.length)
+			printf("libHidDisplay_DrawCommit ret != len: len = %i, ret = %i\n", desc->u.drawop.length, ret);
+
+		return (ret == (int)desc->u.drawop.length);
+	}else{
+		printf("libHidDisplay_DrawCommit failed: len = %i\n", desc->u.drawop.length);
+		return 0;
+	}
+	return 1;
+}
+
+int libHidDisplay_DrawClutCommit (teensyRawHidcxt_t *ctx, void *colTable, const int colTotal, const size_t colTableSize, const uint16_t refId)
+{
+	printf("libHidDisplay_DrawClutCommit,  %i %i, %i\n", colTotal, (int)colTableSize, refId);
+	
+	char buffer[ctx->wMaxPacketSize];
+	memset(buffer, 0, sizeof(buffer));
+		
+	rawhid_header_t *desc = (rawhid_header_t*)buffer;
+	desc->op = RAWHID_OP_COLLUT;
+	desc->u.collut.colTotal = colTotal;
+	desc->u.collut.colTableSize = colTableSize;
+	desc->u.collut.refId = refId;
+	desc->crc = calcWriteCrc(desc);
+	
+
+	if (libHidDisplay_WriteData(ctx, buffer, sizeof(rawhid_header_t)) == sizeof(rawhid_header_t)){
+		// todo: check return, ensure everything was sent
+		int ret = libHidDisplay_WriteData(ctx, colTable, colTableSize);
+		if (ret != (int)colTableSize)
+			printf("libHidDisplay_DrawClutCommit ret != len: len = %i, ret = %i\n", (int)colTableSize, ret);
+
+		return (ret == (int)colTableSize);
+	}else{
+		printf("libHidDisplay_DrawClutCommit failed: len = %i\n", (int)colTableSize);
+		return 0;
+	}
+	return 1;
 }
 
 int libHidDisplay_WriteImage (teensyRawHidcxt_t *ctx, void *pixelData)
@@ -288,16 +349,14 @@ int libHidDisplay_GetReportWait (teensyRawHidcxt_t *ctx, touch_t *touch)
 	int ret = libHidDisplay_ReadData(ctx, ctx->buffer, ctx->wMaxPacketSize);
 	if (ret == (int)ctx->wMaxPacketSize){
 		rawhid_header_t *header = (rawhid_header_t*)ctx->buffer;
-		if (header->op == RAWHID_OP_TOUCH){
-			uint32_t crc = calcWriteCrc(header);
-			if (crc == header->crc){
-				memcpy(touch, &header->u.touch, sizeof(*touch));
-				//printf("libHidDisplay_GetReportWait: crc %X %X, %i\n", crc, header->crc, touch->tPoints);
-				if (touch->tPoints)
-					return touch->tPoints;
-				else
-					return -1;	// release
-			}
+		uint32_t crc = calcWriteCrc(header);
+		if (crc == header->crc && header->op == RAWHID_OP_TOUCH){
+			memcpy(touch, &header->u.touch, sizeof(*touch));
+			//printf("libHidDisplay_GetReportWait: crc %X %X, %i\n", crc, header->crc, touch->tPoints);
+			if (touch->tPoints)
+				return touch->tPoints;
+			else
+				return -1;	// release
 		}
 	}
 	return 0;
