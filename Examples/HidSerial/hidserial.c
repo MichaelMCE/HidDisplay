@@ -1,9 +1,6 @@
 
 #include <stdio.h>
 #include <conio.h>
-#include <wchar.h>
-#include <math.h>
-#include <string.h>
 #include <stdlib.h>
 #include <inttypes.h>
 #include "HidApi/include/hidapi.h"
@@ -44,18 +41,18 @@ int main (int argc, char *argv[])
 			while (!kbhit()){
 				data[0] = 0;
 				int ret = hid_read_timeout(device, data, sizeof(data), 500);
-				if (ret == 64){
+				if (ret > 0){
 					for (int i = 0; i < ret && data[i]; i++)
 						printf("%c", data[i]);
 				}
 			}
+			printf("\n");
 			hid_close(device);
 		}
-		hid_free_enumeration(deviceInfo);
 	}
 
+	hid_free_enumeration(deviceInfo);
 	hid_exit();
 	return 1;
-
 }
 
