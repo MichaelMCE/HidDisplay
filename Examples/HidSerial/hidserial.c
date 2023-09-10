@@ -20,39 +20,50 @@ int main (int argc, char *argv[])
 
 	printf("Searching for VID:0x%X PID:0x%X...\n", HID_VID, HID_PID);
 	
-	struct hid_device_info *deviceInfo = hid_enumerate(HID_VID, HID_PID);
-	if (deviceInfo){
-		if (deviceInfo->interface_number == 0)	// HidDisplay serial port is on interface 1
-			deviceInfo = deviceInfo->next;
+	struct hid_device_info *deviceRoot = hid_enumerate(HID_VID, HID_PID);
+	if (!deviceRoot){
+		printf("Device not found or Serial unavailable\n");
+		hid_exit();
+		return 0;
 	}
-	
-	if (!deviceInfo){
-		printf("Device not found\n");
 
-	}else if (deviceInfo){
-		printf("Found:\nInterface: %i\nPath: %s\n", deviceInfo->interface_number, deviceInfo->path);
-		printf("Serial #: %ls\n\n", deviceInfo->serial_number);
-		
-		hid_device *device = hid_open_path(deviceInfo->path);
-		if (device){
-			printf("Ready\n--------\n");
-			uint8_t data[1024];
-			
-			while (!kbhit()){
-				data[0] = 0;
-				int ret = hid_read_timeout(device, data, sizeof(data), 500);
-				if (ret > 0){
-					for (int i = 0; i < ret && data[i]; i++)
-						printf("%c", data[i]);
-				}
-			}
-			printf("\n");
-			hid_close(device);
+	struct hid_device_info *deviceInfo = deviceRoot;
+	if (deviceInfo->interface_number == 0){						// HidDisplay serial port is on interface 1
+		if (!deviceInfo->next){
+			printf("Device found but Serial unavailable\n");	// Interface 1 not found on device, is this an Arduino compatible device?
+			hid_free_enumeration(deviceRoot);
+			hid_exit();
+			return 0;
+		}else{
+			deviceInfo = deviceInfo->next;
 		}
 	}
 
-	hid_free_enumeration(deviceInfo);
+	printf("Found device on Interface %i\nPath: %s\n", deviceInfo->interface_number, deviceInfo->path);
+	printf("Serial #: %ls\n\n", deviceInfo->serial_number);
+		
+	hid_device *device = hid_open_path(deviceInfo->path);
+	if (device){
+		printf("Ready\n--------\n");
+		uint8_t data[1024];
+			
+		while (!kbhit()){
+			data[0] = 0;
+			int ret = hid_read_timeout(device, data, sizeof(data), 500);
+			if (ret > 0){
+				for (int i = 0; i < ret && data[i]; i++)
+					printf("%c", data[i]);
+			}
+		}
+		printf("\n");
+		hid_close(device);
+		
+	}else{
+		printf("%ls\n", hid_error(NULL));
+	}
+
+	hid_free_enumeration(deviceRoot);
 	hid_exit();
-	return 1;
+	return 0;
 }
 
