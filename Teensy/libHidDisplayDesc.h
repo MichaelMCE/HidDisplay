@@ -14,6 +14,7 @@
 #define RAWHID_OP_SERIAL		8
 #define RAWHID_OP_PRIMATIVE		9
 #define RAWHID_OP_COLLUT		10
+#define RAWHID_OP_RESET			11		// reboot device
 
 #define RAWHID_GFX_CLEAR		1		// clear internal buffer with colour n, don't update display. .var16[0]/16bit colour, .var32[0]/24/32bit colour
 #define RAWHID_GFX_SCROLL		2		// hardware scroll buffer n rows/cols. only if display support scroll
@@ -41,6 +42,7 @@
 #define RAWHID_OP_FLAG_REPORTSON	0x20	// switch on touch control reports, if compiled in
 #define RAWHID_OP_FLAG_REPORTSOFF	0x40	// turn off touch control reports
 #define RAWHID_OP_FLAG_TOUCHDIR		0x80
+#define RAWHID_OP_FLAG_RESET		0xFF
 
 #define RAWHID_OP_TOUCH_INVALID		0x00
 #define RAWHID_OP_TOUCH_POINTS		0x01

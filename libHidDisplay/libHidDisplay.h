@@ -112,5 +112,8 @@ int libHidDisplay_DrawOpsCommit (teensyRawHidcxt_t *ctx, void *drawOps, const in
 int libHidDisplay_DrawClutCommit (teensyRawHidcxt_t *ctx, void *colTable, const int colTotal, const size_t colTableSize, const uint16_t refId);
 
 
+// intiate device reboot
+int libHidDisplay_Reset (teensyRawHidcxt_t *ctx);
+
 #endif
 

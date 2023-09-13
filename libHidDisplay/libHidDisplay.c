@@ -243,6 +243,24 @@ int libHidDisplay_DrawClutCommit (teensyRawHidcxt_t *ctx, void *colTable, const 
 	return 1;
 }
 
+int libHidDisplay_Reset (teensyRawHidcxt_t *ctx)
+{
+	char buffer[ctx->wMaxPacketSize];
+	memset(buffer, 0, sizeof(buffer));
+
+	rawhid_header_t *desc = (rawhid_header_t*)buffer;
+	desc->op = RAWHID_OP_RESET;
+	desc->flags = RAWHID_OP_FLAG_RESET;
+	desc->crc = calcWriteCrc(desc);
+
+	if (libHidDisplay_WriteData(ctx, buffer, sizeof(rawhid_header_t)) == sizeof(rawhid_header_t)){
+		if (USE_WRITE_ASYNC) Sleep(1);
+		return 1;
+	}else{
+		return 0;
+	}
+}
+
 int libHidDisplay_WriteImage (teensyRawHidcxt_t *ctx, void *pixelData)
 {
 	//printf("libHidDisplay_WriteImage\n");

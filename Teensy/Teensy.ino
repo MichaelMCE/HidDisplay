@@ -677,6 +677,12 @@ static void do_touch (touchCtx_t *ctx, touch_t *touch)
 }
 #endif
 
+void opReset (rawhid_header_t *desc)
+{
+	if (desc->flags&RAWHID_OP_FLAG_RESET)
+		SCB_AIRCR = 0x05FA0004;
+}
+
 void loop ()
 {
 	rawhid_header_t *desc = (rawhid_header_t*)recvBuffer;
@@ -715,6 +721,8 @@ void loop ()
 	  }else if (op == RAWHID_OP_TOUCH){
 		  opTouchCtrl(&touchCtx, desc);
 #endif
+	  }else if (op == RAWHID_OP_RESET){
+	  	  opReset(desc);
 	  }
 	}
 }
