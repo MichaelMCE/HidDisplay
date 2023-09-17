@@ -192,8 +192,11 @@ int touch_read (touch_t *touch)
 	if (touch->direction != TOUCH_DIR_NONE)
 		FT5216_applyRotation(touch->direction, &touch->x, &touch->y);
 
-	if (touch->x > TFT_WIDTH || touch->y > TFT_HEIGHT)
+	if (touch->x > TFT_WIDTH || touch->y > TFT_HEIGHT){
+		touch->idx = 0;
+		touch->tPoints = 0;
 		return 0;
+	}
 
    	touch->points[touch->idx].x = touch->x;
    	touch->points[touch->idx].y = touch->y;
