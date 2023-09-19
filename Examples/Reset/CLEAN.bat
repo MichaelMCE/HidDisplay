@@ -5,5 +5,5 @@ del *.o
 del *.def
 rem del *.a
 
-del draw64.exe
-del draw32.exe
+del reset64.exe
+del reset32.exe
