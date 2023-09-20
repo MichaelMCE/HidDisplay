@@ -24,6 +24,12 @@ USB Detail:
 #include "hid/usb_hid.h"
 #include "hid/usb_hid.c"
 #include "Teensy.h"
+
+#if ENABLE_OP_PRIMATIVES
+#include "draw/drawops.h"
+static draw_ops_t drawOpsRoot;
+#endif
+
 #if USE_STARTUP_IMAGE
 #include "startup_256x142_16.h"
 #endif
@@ -33,35 +39,67 @@ static touchCtx_t touchCtx;
 #endif
 
 
-typedef struct _band {
-	uint8_t x1;
-	uint8_t x2;
-}cband_t;
-
-
 
 static config_t config;
+static usb_rawhid_classex rawHid;
 static uint8_t *recvBuffer = NULL;
-static usb_rawhid_classex RawHid;
+static uint8_t tmpBuffer[8];
 
 
 
 
 static inline int usb_recv2 (void **buffer)
 {
-	int ret = RawHid.recv2(buffer, 9);
+	int ret = rawHid.recv2(buffer, 9);
 	recvBuffer = (uint8_t*)*buffer;
 	return ret;
 }
 
 static inline int usb_recv (void *buffer)
 {
-	return RawHid.recv(buffer, 9);
+	return rawHid.recv(buffer, 9);
 }
 
 static inline int usb_send (void *buffer, const size_t size)
 {
-	return RawHid.send(buffer, size);
+	return rawHid.send(buffer, size);
+}
+
+int usb_read (uint8_t *buffer, const size_t len)
+{
+	int totalReads = len / PACKET_SIZE;
+	if (!totalReads) totalReads = 1;
+		
+	while (totalReads--){
+		int bytesIn = usb_recv(buffer);
+		if (bytesIn != PACKET_SIZE)
+			return 0;
+		buffer += PACKET_SIZE;
+	}
+
+	int finalRead = len % PACKET_SIZE;
+	if (finalRead){
+		int bytesIn = usb_recv2((void**)&recvBuffer);
+		if (bytesIn > 0 && bytesIn == PACKET_SIZE)
+			memcpy(buffer, recvBuffer, finalRead);
+		else
+			return 0;
+	}
+	return 1;
+}
+
+static int usb_flush (const size_t len)
+{
+	int totalReads = (len / PACKET_SIZE);
+	totalReads += ((len % PACKET_SIZE) > 0);
+	if (!totalReads) totalReads = 1;
+		
+	while (totalReads--){
+		int bytesIn = usb_recv2((void**)&recvBuffer);
+		if (bytesIn != PACKET_SIZE)
+			return 0;
+	}
+	return 1;
 }
 
 static inline uint32_t calcWriteCrc (rawhid_header_t *desc)
@@ -104,194 +142,7 @@ static inline uint32_t decodeHeader (rawhid_header_t *header, uint16_t *x1, uint
 
 	return 1;
 }
-#if 0
-static const cband_t band[] = {
-	{110, 130},
-	{102, 138},
-	{96 , 144},
-	{92 , 148},
-	{88 , 152},
-	{85 , 155},
-	{82 , 158},
-	{79 , 161},
-	{76 , 164},
-	{74 , 166},
-	{71 , 169},
-	{69 , 171},
-	{67 , 173},
-	{65 , 175},
-	{63 , 177},
-	{62 , 178},
-	{60 , 180},
-	{58 , 182},
-	{56 , 184},
-	{55 , 185},
-	{53 , 187},
-	{52 , 188},
-	{51 , 189},
-	{49 , 191},
-	{48 , 192},
-	{47 , 193},
-	{45 , 195},
-	{44 , 196},
-	{43 , 197},
-	{42 , 198},
-	{41 , 199},
-	{39 , 201},
-	{38 , 202},
-	{37 , 203},
-	{36 , 204},
-	{35 , 205},
 
-	{110, 130}, 
-	{102, 138}, 
-	{96 , 144}, 
-	{92 , 148}, 
-	{88 , 152}, 
-	{85 , 155}, 
-	{82 , 158}, 
-	{79 , 161}, 
-	{76 , 164}, 
-	{74 , 166}, 
-	{71 , 169}, 
-	{69 , 171}, 
-	{67 , 173}, 
-	{65 , 175}, 
-	{63 , 177}, 
-	{62 , 178}, 
-	{60 , 180}, 
-	{58 , 182}, 
-	{56 , 184}, 
-	{55 , 185}, 
-	{53 , 187}, 
-	{52 , 188}, 
-	{51 , 189}, 
-	{49 , 191}, 
-	{48 , 192}, 
-	{47 , 193}, 
-	{45 , 195}, 
-	{44 , 196}, 
-	{43 , 197}, 
-	{42 , 198}, 
-	{41 , 199}, 
-	{39 , 201}, 
-	{38 , 202}, 
-	{37 , 203}, 
-	{36 , 204}, 
-	{35 , 205}, 
-
-	{110, 130}, 
-	{102, 138}, 
-	{96 , 144}, 
-	{92 , 148}, 
-	{88 , 152}, 
-	{85 , 155}, 
-	{82 , 158}, 
-	{79 , 161}, 
-	{76 , 164}, 
-	{74 , 166}, 
-	{71 , 169}, 
-	{69 , 171}, 
-	{67 , 173}, 
-	{65 , 175}, 
-	{63 , 177}, 
-	{62 , 178}, 
-	{60 , 180}, 
-	{58 , 182}, 
-	{56 , 184}, 
-	{55 , 185}, 
-	{53 , 187}, 
-	{52 , 188}, 
-	{51 , 189}, 
-	{49 , 191}, 
-	{48 , 192}, 
-	{47 , 193}, 
-	{45 , 195}, 
-	{44 , 196}, 
-	{43 , 197}, 
-	{42 , 198}, 
-	{41 , 199}, 
-	{39 , 201}, 
-	{38 , 202}, 
-	{37 , 203}, 
-	{36 , 204}, 
-	{35 , 205}, 
-
-	{110, 130}, 
-	{102, 138}, 
-	{96 , 144}, 
-	{92 , 148}, 
-	{88 , 152}, 
-	{85 , 155}, 
-	{82 , 158}, 
-	{79 , 161}, 
-	{76 , 164}, 
-	{74 , 166}, 
-	{71 , 169}, 
-	{69 , 171}, 
-	{67 , 173}, 
-	{65 , 175}, 
-	{63 , 177}, 
-	{62 , 178}, 
-	{60 , 180}, 
-	{58 , 182}, 
-	{56 , 184}, 
-	{55 , 185}, 
-	{53 , 187}, 
-	{52 , 188}, 
-	{51 , 189}, 
-	{49 , 191}, 
-	{48 , 192}, 
-	{47 , 193}, 
-	{45 , 195}, 
-	{44 , 196}, 
-	{43 , 197}, 
-	{42 , 198}, 
-	{41 , 199}, 
-	{39 , 201}, 
-	{38 , 202}, 
-	{37 , 203}, 
-	{36 , 204}, 
-	{35 , 205}, 
-
-	{110, 130}, 
-	{102, 138}, 
-	{96 , 144}, 
-	{92 , 148}, 
-	{88 , 152}, 
-	{85 , 155}, 
-	{82 , 158}, 
-	{79 , 161}, 
-	{76 , 164}, 
-	{74 , 166}, 
-	{71 , 169}, 
-	{69 , 171}, 
-	{67 , 173}, 
-	{65 , 175}, 
-	{63 , 177}, 
-	{62 , 178}, 
-	{60 , 180}, 
-	{58 , 182}, 
-	{56 , 184}, 
-	{55 , 185}, 
-	{53 , 187}, 
-	{52 , 188}, 
-	{51 , 189}, 
-	{49 , 191}, 
-	{48 , 192}, 
-	{47 , 193}, 
-	{45 , 195}, 
-	{44 , 196}, 
-	{43 , 197}, 
-	{42 , 198}, 
-	{41 , 199}, 
-	{39 , 201}, 
-	{38 , 202}, 
-	{37 , 203}, 
-	{36 , 204}, 
-	{35 , 205} 
-};
-#endif 
 #if USE_STARTUP_IMAGE
 static void setStartupImage ()
 {
@@ -308,12 +159,8 @@ static void setStartupImage ()
 	int y2 = y1 + img_h-1;
 	if (y2 > TFT_HEIGHT-1) y2 = TFT_HEIGHT-1;
 	
-	//y1 = 0;
-	//y2 = img_h - 1;
-
 	for (int y = y1, row = 0; y <= y2; y++, row++)
 		tft_update_array((uint16_t*)frame256x142[row], x1, y, x2, y);
-		//tft_update_array((uint16_t*)&frame256x142[row][band[y].x1-2], band[y].x1-2, y, band[y].x2+2, y);
 }
 #endif
 
@@ -337,7 +184,8 @@ void setup ()
 	printf("Serial: " DEVICE_SERIAL_STR "\r\n");
 	printf("\r\n");
 	
-
+	recvBuffer = tmpBuffer;
+	
 	// not needed here as is called from within teensy4/usb.c
 	//usb_rawhid_configure();
 	
@@ -489,7 +337,7 @@ static void opSendDeviceCfg (rawhid_header_t *desc)
 	usb_send(desc, sizeof(*desc));
 }
 
-static void opGfx (rawhid_header_t *desc)
+void opGfx (rawhid_header_t *desc)
 {
 	const int op = desc->u.gfxop.op;
 	if (op == RAWHID_GFX_CLEAR){
@@ -539,39 +387,15 @@ void opRecvImage (rawhid_header_t *header)
 #else	
 void opRecvImage (rawhid_header_t *header)
 {
-	//elapsedMillis timeMs = 0;
 	const int updateDisplay = header->flags&RAWHID_OP_FLAG_UPDATE;
 	uint32_t len = 0;
 	
 	if (decodeHeader(header, NULL, NULL, NULL, NULL, &len)){
-		uint8_t *dbuffer = (uint8_t*)tft_getBuffer();
-		int bytesIn = 0;
-				
-		int totalReads = len / PACKET_SIZE;
-		if (!totalReads) totalReads = 1;
-		
-		while (totalReads--){
-			bytesIn = usb_recv(dbuffer);
-			if (bytesIn != PACKET_SIZE) break;
-			dbuffer += PACKET_SIZE;
-		}
+		usb_read((uint8_t*)tft_getBuffer(), len);
 
-		int finalRead = len % PACKET_SIZE;
-		if (finalRead){
-			bytesIn = usb_recv2((void**)&recvBuffer);
-			if (bytesIn > 0)
-				memcpy(dbuffer, recvBuffer, finalRead);
-		}
+		if (updateDisplay)
+			tft_update();
 	}
-	
-	//uint32_t t0 = timeMs;
-	//printf("time to recv %i\n", (int)t0);
-	//timeMs = 0;
-	if (updateDisplay)
-		tft_update();
-	
-	//t0 = timeMs;
-	//printf("time to display %i\n", (int)t0);
 }
 #endif
 
@@ -677,6 +501,229 @@ static void do_touch (touchCtx_t *ctx, touch_t *touch)
 }
 #endif
 
+
+#if ENABLE_OP_PRIMATIVES
+
+static const inline uint32_t calcCrc (const uint8_t *buffer, const uint32_t blen)
+{
+	uint32_t crc = *buffer;
+
+	for (uint32_t i = 0; i < blen; i++){
+		crc <<= 1;
+		crc ^= buffer[i];
+	}
+	return crc;
+}
+
+void drawOps_decode (uint8_t *buffer, int bufferSize, int opTotal, const int refId)
+{
+	uint8_t *pbuffer = buffer;
+	
+	strm_hdr_t hdr;
+	memcpy(&hdr, pbuffer, sizeof(hdr));
+	pbuffer += sizeof(hdr);
+	
+	uint32_t crc = calcCrc(pbuffer, bufferSize-sizeof(hdr));
+	if (crc != hdr.crc){
+		printf("ops decode: crc mismatch for %i: 0x%X != 0x%X\r\n", (int)hdr.refId, (int)hdr.crc, (int)crc);
+		return;
+	}
+
+	for (int i = 0; i < hdr.totalOps; i++){
+		strm_op_t strm;
+		memcpy(&strm, pbuffer, sizeof(strm));
+		pbuffer += sizeof(strm);
+		if (strm.idx != i){
+			printf("ops decode: op code mismatch: %i != %i\r\n", strm.idx, i);
+			return;
+		}
+
+		uint8_t *array = (uint8_t*)calloc(1, strm.len);
+		if (!array) continue;
+
+		op_base_t base = {.op=(draw_op_t*)array};
+		memcpy(base.op, pbuffer, strm.len);
+			
+		const int opLength = drawOp_size(strm.type);
+		if (strm.type == DRAWOP_IMAGE)
+			base.image->pixels = (void*)(array + opLength);
+			
+		else if (strm.type == DRAWOP_POLYLINE)
+			base.poly->pts = (pointFlt_t*)(array + opLength);
+			
+		else if (strm.type == DRAWOP_STRING)
+			base.str->buffer = (uint8_t*)(array + opLength);
+		
+		drawOps_dispatch(&base, strm.type, TFT_WIDTH, TFT_HEIGHT, refId);
+		pbuffer += strm.len;
+		
+		free(array);
+	}
+}
+
+static void drawOps_add (draw_ops_t *root, draw_ops_t *ops)
+{
+	// first try adding in to an empty slot
+	draw_ops_t *head = root->next;
+	while (head){
+		if (!head->storage){
+			head->storage = ops->storage;
+			head->total = ops->total;
+			head->length = ops->length;
+			head->refId = ops->refId;
+			extmem_free(ops);
+			return;
+		}
+		head = head->next;
+	}
+
+	// no empty slots exist, add to end
+	head = root;
+	while (head->next)
+		head = head->next;
+		
+	head->next = ops;
+}
+
+void drawOps_remove (draw_ops_t *head, const uint16_t refId)
+{
+	while (head){
+		if (head->refId == refId){
+			if (head->storage)
+				extmem_free(head->storage);
+			head->storage = NULL;
+			head->refId = 0;
+			return;
+		}
+		head = head->next;
+	}
+}
+
+draw_ops_t *drawOps_find (draw_ops_t *head, const uint16_t refId)
+{
+	while (head){
+		if (head->refId == refId)
+			return head;
+		head = head->next;
+	};
+	return NULL;
+}
+
+void drawOps_execute (draw_ops_t *ops)
+{
+	if (drawOps_begin(NULL, ops->total, ops->refId)){
+		drawOps_decode((uint8_t*)ops->storage, ops->length, ops->total, ops->refId);
+		drawOps_end(NULL, ops->total, ops->refId);
+	}
+}
+#endif
+
+void opPalette (rawhid_header_t *desc)
+{
+	int totalSize = desc->u.pal.length;
+	
+#if ENABLE_OP_PRIMATIVES
+	const uint16_t totalCol = desc->u.pal.total;
+	const uint16_t refId = desc->u.pal.refId;
+
+	int readLength = totalSize;
+	if (readLength < PACKET_SIZE) readLength = PACKET_SIZE;
+
+	uint8_t *buffer = (uint8_t*)extmem_calloc(1, readLength);
+	if (buffer){
+		if (usb_read(buffer, readLength)){
+			if (totalSize < readLength)
+				buffer = (uint8_t*)extmem_realloc((void*)buffer, totalSize);
+
+			// default behaviour for a pal is to search and remove a preexisting palette upon reference clash
+			if (refId)
+				drawOps_remove(&drawOpsRoot, refId);
+			
+			draw_ops_t *ops = (draw_ops_t*)extmem_calloc(1, sizeof(draw_ops_t));
+			if (ops){
+				ops->storage = buffer;
+				ops->total = totalCol;
+				ops->length = totalSize;
+				ops->refId = refId;
+				ops->next = NULL;
+
+				if (refId)
+					drawOps_add(&drawOpsRoot, ops);
+				drawOps_palette(buffer, totalSize, totalCol, refId);
+			}
+		}else{
+			extmem_free(buffer);
+		}
+	}else
+		// memory allocation has failed
+		// remove from the usb pipe whatever was to be processed	
+#endif
+	{
+		usb_flush(totalSize);
+	}
+}
+
+void opPrimatives (rawhid_header_t *desc)
+{
+	int totalSize = desc->u.drawop.length;
+
+#if ENABLE_OP_PRIMATIVES
+	const uint16_t totalOps = desc->u.drawop.total;
+	const uint16_t refId = desc->u.drawop.refId;
+	const uint8_t  flags = desc->u.drawop.flags; 				// RAWHID_DRAW_STORE | RAWHID_DRAW_REFID | RAWHID_DRAW_EXECUTE;
+
+	int readLength = totalSize;
+	if (readLength < PACKET_SIZE) readLength = PACKET_SIZE;
+
+	if ((flags&RAWHID_DRAW_EXECUTE) && !totalOps && refId){		// execute an existing command set
+		draw_ops_t *ops = drawOps_find(&drawOpsRoot, refId);
+		if (ops)
+			drawOps_execute(ops);
+		return;
+	}
+
+	uint8_t *buffer = (uint8_t*)extmem_calloc(1, readLength);
+	if (buffer){
+		if (usb_read(buffer, readLength)){
+			if (totalSize < readLength)							// data length is less than minimum read size (packet_size), so reclaim that memory
+				buffer = (uint8_t*)extmem_realloc((void*)buffer, totalSize);
+
+			if (flags&RAWHID_DRAW_STORE){
+				if (flags&RAWHID_DRAW_OVERWRITE)
+					drawOps_remove(&drawOpsRoot, refId);
+
+				if (!drawOps_find(&drawOpsRoot, refId)){
+					draw_ops_t *ops = (draw_ops_t*)extmem_calloc(1, sizeof(draw_ops_t));
+					if (ops){
+						ops->storage = buffer;
+						ops->total = totalOps;
+						ops->length = totalSize;
+						ops->refId = refId;
+						ops->next = NULL;
+
+						drawOps_add(&drawOpsRoot, ops);
+					}
+				}
+			}
+
+			if (flags&RAWHID_DRAW_EXECUTE){
+				if (drawOps_begin(NULL, totalOps, refId)){
+					drawOps_decode(buffer, totalSize, totalOps, refId);
+					drawOps_end(NULL, totalOps, refId);
+				}
+			}
+		}else{
+			extmem_free(buffer);
+		}
+	}else
+		// memory allocation has failed
+		// remove from the usb pipe whatever was to be processed
+#endif
+	{
+		usb_flush(totalSize);
+	}
+}
+
 void opReset (rawhid_header_t *desc)
 {
 	if (desc->flags&RAWHID_OP_FLAG_RESET)
@@ -701,6 +748,12 @@ void loop ()
 		
 	  }else if (op == RAWHID_OP_WRITEIMAGE){
 		  opRecvImage(desc);
+
+	  }else if (op == RAWHID_OP_PRIMATIVE){
+		  opPrimatives(desc);
+
+	  }else if (op == RAWHID_OP_PALETTE){
+		  opPalette(desc);
 
 	  }else if (op == RAWHID_OP_GFXOP){
 		  opGfx(desc);

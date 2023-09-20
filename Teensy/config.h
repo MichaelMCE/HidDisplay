@@ -12,16 +12,18 @@
 #define USE_BUFFER_LAYERS		0		// enable muliple backbuffer lateys. Is valid with USE_EXTMEM_BUFFER/PSRAM only. Can not use with USE_STRIP_RENDERER
 #define BUFFER_LAYERS_TOTAL		8		// make room for n backbuffer layers. Each layer size is = (WIDTH * HEIGHT * 2)
 #define ENABLE_TOUCH_FT5216		1		// enable i2c touch controller and reports
-#define ENABLE_EXTRAM_CACHE		0		// enable PSRAM cache. Is experimental.
+#define ENABLE_EXTRAM_CACHE		0		// enable PSRAM precache if using USE_EXTMEM_BUFFER. Is experimental.
+#define ENABLE_OP_PRIMATIVES	0		// enable drawing api - 32bit HOST only. Not yet compatible with 64bit client build. Requires extmem/PSRAM
+
 
 
 // there can only be one
 #define USE_FLEXTFT_ILI9486		0
 #define USE_FLEXTFT_S6D04D1		0
-#define USE_FLEXTFT_ILI9806		0
+#define USE_FLEXTFT_ILI9806		1
 #define USE_FLEXTFT_RM68120		0
 #define USE_FLEXTFT_R61529		0
-#define USE_FLEXTFT_R61408		1
+#define USE_FLEXTFT_R61408		0
 #define USE_FLEXTFT_LG4572B		0
 #define USE_FLEXTFT_NT35510		0
 #define USE_FLEXTFT_NT35516		0
@@ -113,7 +115,7 @@
 #define TFT_RST					11		// Reset
 #define TFT_CS					12		// Chip select
 #define TFT_BL					33		// Backlight
-#define TFT_INTENSITY			70		// PWM value from 0 to 255
+#define TFT_INTENSITY			60		// PWM value from 0 to 255
 // Read is 37
 // Write is 36
 
