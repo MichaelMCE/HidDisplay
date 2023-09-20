@@ -9,22 +9,17 @@
 #define RAWHID_OP_GFXOP			3		// clear screen, scroll n pixels v/h, etc..
 #define RAWHID_OP_WRITEAREA		4
 #define RAWHID_OP_SETCFG		5
-#define RAWHID_OP_WRITETILE		6
+#define RAWHID_OP_WRITETILE		6		// this is probably broken. TODO: test this
 #define RAWHID_OP_TOUCH			7
-#define RAWHID_OP_SERIAL		8
-#define RAWHID_OP_PRIMATIVE		9
-#define RAWHID_OP_COLLUT		10
+#define RAWHID_OP_SERIAL		8		// request for device serial number
+#define RAWHID_OP_PRIMATIVE		9		// drawing operation(s)
+#define RAWHID_OP_PALETTE		10		// colour look up table
 #define RAWHID_OP_RESET			11		// reboot device
 
 #define RAWHID_GFX_CLEAR		1		// clear internal buffer with colour n, don't update display. .var16[0]/16bit colour, .var32[0]/24/32bit colour
 #define RAWHID_GFX_SCROLL		2		// hardware scroll buffer n rows/cols. only if display support scroll
 #define RAWHID_GFX_ROTATE		3		// hardware rotate. .var8[0]/rotation (0 to 3)
 #define RAWHID_GFX_BACKLIGHT	4		// panel backlight brightness. .var8[0] (0 to 127)
-
-
-#define RAWHID_DRAW_RENDER		0x01	// commit to render immediately
-#define RAWHID_DRAW_STORE		0x02	// store instructions (ops) for later processing, respond with a refId
-#define RAWHID_DRAW_REFID		0x04	// client has requested a reference Id
 
 #define RAWHID_BPP_1			1
 #define RAWHID_BPP_4			2
@@ -47,6 +42,13 @@
 #define RAWHID_OP_TOUCH_INVALID		0x00
 #define RAWHID_OP_TOUCH_POINTS		0x01
 #define RAWHID_OP_TOUCH_RELEASE		0x02	// is a release msg if set
+
+
+#define HIDD_DRAW_EXECUTE		0x01	// commit to render immediately
+#define HIDD_DRAW_STORE			0x02	// store instructions (ops) for later processing, respond with a refId
+#define HIDD_DRAW_REFID			0x04	// client has requested a reference Id
+#define HIDD_DRAW_OVERWRITE		0x08	// overwrite an existing command set with an identical refId
+
 
 
 enum _touchdir {		// touch rotate direction
@@ -140,13 +142,25 @@ typedef struct _header_t {
 		}layers;
 
 		struct {
-			uint16_t colTotal;		// number of colours possible in table
-			uint16_t colTableSize;
+			uint16_t total;			// number of colours possible in table
+			uint16_t length;		// size (bytes) of colour table
 			
 			uint16_t refId;			// client supplied reference id
 			uint8_t unused1;
 			uint8_t unused2;
-		}collut;
+		}pal;
+
+		struct {
+			uint16_t total;			// number of draw instructions that follow
+			uint16_t refId;			// 
+			
+			uint32_t length;		// sum length of instructions (ops) + data, which is the size of the read() which follows
+			
+			uint32_t crc;			// crc of the instructions+data buffer
+			
+			uint8_t	 flags;			// RAWHID_DRAW_
+			uint8_t  var8[7];		//
+		}drawop;
 
 		struct {
 			uint16_t x1;
@@ -157,18 +171,6 @@ typedef struct _header_t {
 			uint32_t len;			
 		}write;
 
-		struct {
-			uint16_t total;			// total number of draw ops (instructions) that follow
-			uint16_t length;		// sum length of instructions (ops) + data, which is the size of the read() which follows
-			
-			uint32_t crc;			// crc of the instructions+data buffer
-			
-			uint8_t	 flags;			// RAWHID_DRAW_
-			uint8_t  unused1;
-			uint16_t refId;			// 
-			
-			uint8_t  var8[8];		//
-		}drawop;
 		
 		struct {
 			uint8_t  op;

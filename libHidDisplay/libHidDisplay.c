@@ -174,6 +174,11 @@ static int libHidDisplay_WriteData (teensyRawHidcxt_t *ctx, void *data, const si
 #endif
 }
 
+static int libHidDisplay_WriteDataWait (teensyRawHidcxt_t *ctx, void *data, const size_t size)
+{
+	return usb_bulk_write(ctx->usb_handle, LIBUSB_ENDPOINT_WRITE, (char*)data, size, 1000);
+}
+
 static uint32_t calcWriteCrc (const rawhid_header_t *desc)
 {
 	uint32_t crc = desc->op ^ desc->flags;
@@ -184,10 +189,8 @@ static uint32_t calcWriteCrc (const rawhid_header_t *desc)
 	return crc;
 }
 
-int libHidDisplay_DrawOpsCommit (teensyRawHidcxt_t *ctx, void *drawOps, const int drawOpsLen, const int totalOps, const int refId)
+int libHidDisplay_DrawOpsCommit (teensyRawHidcxt_t *ctx, void *drawOps, const int drawOpsLen, const int totalOps, const uint32_t flags, const int refId)
 {
-	//printf("libHidDisplay_DrawCommit %i %i %i\n", drawOpsLen, totalOps, refId);
-	
 	char buffer[ctx->wMaxPacketSize];
 	memset(buffer, 0, sizeof(buffer));
 		
@@ -195,14 +198,17 @@ int libHidDisplay_DrawOpsCommit (teensyRawHidcxt_t *ctx, void *drawOps, const in
 	desc->op = RAWHID_OP_PRIMATIVE;
 	desc->u.drawop.total = totalOps;
 	desc->u.drawop.length = drawOpsLen;
-	desc->u.drawop.flags = RAWHID_DRAW_STORE | RAWHID_DRAW_REFID;
 	desc->u.drawop.refId = refId;
+	desc->u.drawop.flags = HIDD_DRAW_STORE | HIDD_DRAW_REFID;
+	if (flags&HIDD_DRAW_EXECUTE)
+		desc->u.drawop.flags |= HIDD_DRAW_EXECUTE;
+	if (flags&HIDD_DRAW_OVERWRITE)
+		desc->u.drawop.flags |= HIDD_DRAW_OVERWRITE;
 	desc->crc = calcWriteCrc(desc);
 	
 
-	if (libHidDisplay_WriteData(ctx, buffer, sizeof(rawhid_header_t)) == sizeof(rawhid_header_t)){
-		// todo: check return, ensure everything was sent
-		int ret = libHidDisplay_WriteData(ctx, drawOps, desc->u.drawop.length);
+	if (libHidDisplay_WriteDataWait(ctx, buffer, sizeof(rawhid_header_t)) == sizeof(rawhid_header_t)){
+		int ret = libHidDisplay_WriteDataWait(ctx, drawOps, desc->u.drawop.length);
 		if (ret != (int)desc->u.drawop.length)
 			printf("libHidDisplay_DrawCommit ret != len: len = %i, ret = %i\n", desc->u.drawop.length, ret);
 
@@ -211,36 +217,53 @@ int libHidDisplay_DrawOpsCommit (teensyRawHidcxt_t *ctx, void *drawOps, const in
 		printf("libHidDisplay_DrawCommit failed: len = %i\n", desc->u.drawop.length);
 		return 0;
 	}
-	return 1;
 }
 
-int libHidDisplay_DrawClutCommit (teensyRawHidcxt_t *ctx, void *colTable, const int colTotal, const size_t colTableSize, const uint16_t refId)
+int libHidDisplay_DrawOpsExecute (teensyRawHidcxt_t *ctx, const int refId)
 {
-	printf("libHidDisplay_DrawClutCommit,  %i %i, %i\n", colTotal, (int)colTableSize, refId);
-	
 	char buffer[ctx->wMaxPacketSize];
 	memset(buffer, 0, sizeof(buffer));
 		
 	rawhid_header_t *desc = (rawhid_header_t*)buffer;
-	desc->op = RAWHID_OP_COLLUT;
-	desc->u.collut.colTotal = colTotal;
-	desc->u.collut.colTableSize = colTableSize;
-	desc->u.collut.refId = refId;
+	desc->op = RAWHID_OP_PRIMATIVE;
+	desc->u.drawop.total = 0;
+	desc->u.drawop.length = 0;
+	desc->u.drawop.flags = HIDD_DRAW_REFID | HIDD_DRAW_EXECUTE;
+	desc->u.drawop.refId = refId;
 	desc->crc = calcWriteCrc(desc);
 	
 
-	if (libHidDisplay_WriteData(ctx, buffer, sizeof(rawhid_header_t)) == sizeof(rawhid_header_t)){
-		// todo: check return, ensure everything was sent
-		int ret = libHidDisplay_WriteData(ctx, colTable, colTableSize);
+	if (libHidDisplay_WriteDataWait(ctx, buffer, sizeof(rawhid_header_t)) == sizeof(rawhid_header_t)){
+		//printf("libHidDisplay_DrawOpsExecute OK\n");
+		return 1;
+	}else{
+		printf("libHidDisplay_DrawCommit failed: len = %i\n", desc->u.drawop.length);
+		return 0;
+	}
+}
+
+int libHidDisplay_DrawClutCommit (teensyRawHidcxt_t *ctx, void *colTable, const int colTotal, const size_t colTableSize, const uint16_t refId)
+{
+	char buffer[ctx->wMaxPacketSize];
+	memset(buffer, 0, sizeof(buffer));
+
+	rawhid_header_t *desc = (rawhid_header_t*)buffer;
+	desc->op = RAWHID_OP_PALETTE;
+	desc->u.pal.total = colTotal;
+	desc->u.pal.length = colTableSize;
+	desc->u.pal.refId = refId;
+	desc->crc = calcWriteCrc(desc);
+	
+
+	if (libHidDisplay_WriteDataWait(ctx, buffer, sizeof(rawhid_header_t)) == sizeof(rawhid_header_t)){
+		int ret = libHidDisplay_WriteDataWait(ctx, colTable, colTableSize);
 		if (ret != (int)colTableSize)
 			printf("libHidDisplay_DrawClutCommit ret != len: len = %i, ret = %i\n", (int)colTableSize, ret);
-
 		return (ret == (int)colTableSize);
 	}else{
 		printf("libHidDisplay_DrawClutCommit failed: len = %i\n", (int)colTableSize);
 		return 0;
 	}
-	return 1;
 }
 
 int libHidDisplay_Reset (teensyRawHidcxt_t *ctx)
@@ -253,8 +276,7 @@ int libHidDisplay_Reset (teensyRawHidcxt_t *ctx)
 	desc->flags = RAWHID_OP_FLAG_RESET;
 	desc->crc = calcWriteCrc(desc);
 
-	if (libHidDisplay_WriteData(ctx, buffer, sizeof(rawhid_header_t)) == sizeof(rawhid_header_t)){
-		if (USE_WRITE_ASYNC) Sleep(1);
+	if (libHidDisplay_WriteDataWait(ctx, buffer, sizeof(rawhid_header_t)) == sizeof(rawhid_header_t)){
 		return 1;
 	}else{
 		return 0;
@@ -423,7 +445,7 @@ int libHidDisplay_SetTileConfig (teensyRawHidcxt_t *ctx, rawhid_header_t *desc)
 
 	desc->op = RAWHID_OP_SETCFG;
 	desc->flags |= RAWHID_OP_FLAG_WINDOW;
-	desc->crc = calcWriteCrc(desc);	
+	desc->crc = calcWriteCrc(desc);
 
 	memset(ctx->buffer, 0, ctx->wMaxPacketSize);
 	memcpy(ctx->buffer, desc, sizeof(*desc));

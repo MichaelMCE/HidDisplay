@@ -108,7 +108,8 @@ void libHidDisplay_WriteImageAsyncStop (teensyRawHidcxt_t *ctx);
 
 
 // work in progress
-int libHidDisplay_DrawOpsCommit (teensyRawHidcxt_t *ctx, void *drawOps, const int drawOpsLen, const int totalOps, const int refId);
+int libHidDisplay_DrawOpsCommit (teensyRawHidcxt_t *ctx, void *drawOps, const int drawOpsLen, const int totalOps, const uint32_t flags, const int refId);
+int libHidDisplay_DrawOpsExecute (teensyRawHidcxt_t *ctx, const int refId);
 int libHidDisplay_DrawClutCommit (teensyRawHidcxt_t *ctx, void *colTable, const int colTotal, const size_t colTableSize, const uint16_t refId);
 
 
