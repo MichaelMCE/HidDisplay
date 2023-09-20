@@ -21,12 +21,6 @@
 #define RAWHID_GFX_ROTATE		3		// hardware rotate. .var8[0]/rotation (0 to 3)
 #define RAWHID_GFX_BACKLIGHT	4		// panel backlight brightness. .var8[0] (0 to 127)
 
-
-#define RAWHID_DRAW_EXECUTE		0x01	// commit to render immediately
-#define RAWHID_DRAW_STORE		0x02	// store instructions (ops) for later processing, respond with a refId
-#define RAWHID_DRAW_REFID		0x04	// client has requested a reference Id
-#define RAWHID_DRAW_OVERWRITE	0x08	// overwrite an existing command set with an identical refId
-
 #define RAWHID_BPP_1			1
 #define RAWHID_BPP_4			2
 #define RAWHID_BPP_8			3
@@ -48,6 +42,13 @@
 #define RAWHID_OP_TOUCH_INVALID		0x00
 #define RAWHID_OP_TOUCH_POINTS		0x01
 #define RAWHID_OP_TOUCH_RELEASE		0x02	// is a release msg if set
+
+
+#define HIDD_DRAW_EXECUTE		0x01	// commit to render immediately
+#define HIDD_DRAW_STORE			0x02	// store instructions (ops) for later processing, respond with a refId
+#define HIDD_DRAW_REFID			0x04	// client has requested a reference Id
+#define HIDD_DRAW_OVERWRITE		0x08	// overwrite an existing command set with an identical refId
+
 
 
 enum _touchdir {		// touch rotate direction

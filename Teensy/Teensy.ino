@@ -670,12 +670,12 @@ void opPrimatives (rawhid_header_t *desc)
 #if ENABLE_OP_PRIMATIVES
 	const uint16_t totalOps = desc->u.drawop.total;
 	const uint16_t refId = desc->u.drawop.refId;
-	const uint8_t  flags = desc->u.drawop.flags; 				// RAWHID_DRAW_STORE | RAWHID_DRAW_REFID | RAWHID_DRAW_EXECUTE;
+	const uint8_t  flags = desc->u.drawop.flags; 				// HIDD_DRAW_STORE | HIDD_DRAW_REFID | HIDD_DRAW_EXECUTE;
 
 	int readLength = totalSize;
 	if (readLength < PACKET_SIZE) readLength = PACKET_SIZE;
 
-	if ((flags&RAWHID_DRAW_EXECUTE) && !totalOps && refId){		// execute an existing command set
+	if ((flags&HIDD_DRAW_EXECUTE) && !totalOps && refId){		// execute an existing command set
 		draw_ops_t *ops = drawOps_find(&drawOpsRoot, refId);
 		if (ops)
 			drawOps_execute(ops);
@@ -688,8 +688,8 @@ void opPrimatives (rawhid_header_t *desc)
 			if (totalSize < readLength)							// data length is less than minimum read size (packet_size), so reclaim that memory
 				buffer = (uint8_t*)extmem_realloc((void*)buffer, totalSize);
 
-			if (flags&RAWHID_DRAW_STORE){
-				if (flags&RAWHID_DRAW_OVERWRITE)
+			if (flags&HIDD_DRAW_STORE){
+				if (flags&HIDD_DRAW_OVERWRITE)
 					drawOps_remove(&drawOpsRoot, refId);
 
 				if (!drawOps_find(&drawOpsRoot, refId)){
@@ -706,7 +706,7 @@ void opPrimatives (rawhid_header_t *desc)
 				}
 			}
 
-			if (flags&RAWHID_DRAW_EXECUTE){
+			if (flags&HIDD_DRAW_EXECUTE){
 				if (drawOps_begin(NULL, totalOps, refId)){
 					drawOps_decode(buffer, totalSize, totalOps, refId);
 					drawOps_end(NULL, totalOps, refId);
