@@ -1,0 +1,6 @@
+
+create libhiddisplay.a
+addlib libhiddisplay_tmp.a
+addlib libusb32.a
+save
+end
