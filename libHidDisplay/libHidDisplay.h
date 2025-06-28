@@ -78,7 +78,7 @@ typedef struct _TeensyRawHidcxt_t{
 }teensyRawHidcxt_t;
 
 
-int libHidDisplay_OpenDisplay (teensyRawHidcxt_t *ctx);
+int libHidDisplay_OpenDisplay (teensyRawHidcxt_t *ctx, const int displayIdx);
 int libHidDisplay_CloseDisplay (teensyRawHidcxt_t *ctx);
 
 int libHidDisplay_Open (teensyRawHidcxt_t *ctx, const uint32_t interface, uint32_t deviceIndex);
@@ -101,7 +101,7 @@ int libHidDisplay_TouchReportEnable (teensyRawHidcxt_t *ctx, const int state, co
 // returns 0 on error or timeout. timeout is @ 400ms
 // returns -1 on release (all fingers up)
 int libHidDisplay_GetReportWait (teensyRawHidcxt_t *ctx, touch_t *touch);
-
+int libHidDisplay_GetReportWaitEx (teensyRawHidcxt_t *ctx, int *reportType, void *report);
 
 // is also called automatically at libHidDisplay_Close[Display]()
 void libHidDisplay_WriteImageAsyncStop (teensyRawHidcxt_t *ctx);

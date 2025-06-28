@@ -77,6 +77,8 @@ int libHidDisplay_GetDisplayTotal ()
 
 int libHidDisplay_Open (teensyRawHidcxt_t *ctx, const uint32_t interface, uint32_t deviceIndex)
 {
+	//printf("libHidDisplay_Open: %i %i\n", interface, deviceIndex);
+	
 	libHidDisplay_Init();
 
 	ctx->usbdev = find_TeensyRawHid(ctx, deviceIndex, interface);
@@ -114,12 +116,12 @@ int libHidDisplay_Open (teensyRawHidcxt_t *ctx, const uint32_t interface, uint32
 	return 0;
 }
 
-int libHidDisplay_OpenDisplay (teensyRawHidcxt_t *ctx)
+int libHidDisplay_OpenDisplay (teensyRawHidcxt_t *ctx, const int displayIdx)
 {
 	memset(ctx, 0, sizeof(*ctx));
 	ctx->interface = RAWHID_INTERFACE;
 			
-	return libHidDisplay_Open(ctx, ctx->interface, 0);
+	return libHidDisplay_Open(ctx, ctx->interface, displayIdx);
 }
 
 int libHidDisplay_Close (teensyRawHidcxt_t *ctx)
@@ -151,7 +153,7 @@ int libHidDisplay_CloseDisplay (teensyRawHidcxt_t *ctx)
 
 static int libHidDisplay_ReadData (teensyRawHidcxt_t *ctx, void *data, const size_t size)
 {
-	return usb_bulk_read(ctx->usb_handle, LIBUSB_ENDPOINT_READ, (char*)data, size, 400);
+	return usb_bulk_read(ctx->usb_handle, LIBUSB_ENDPOINT_READ, (char*)data, size, 500);
 }
 
 static int libHidDisplay_WriteData (teensyRawHidcxt_t *ctx, void *data, const size_t size)
@@ -179,7 +181,7 @@ static int libHidDisplay_WriteDataWait (teensyRawHidcxt_t *ctx, void *data, cons
 	return usb_bulk_write(ctx->usb_handle, LIBUSB_ENDPOINT_WRITE, (char*)data, size, 1000);
 }
 
-static uint32_t calcWriteCrc (const rawhid_header_t *desc)
+static inline uint32_t calcWriteCrc (const rawhid_header_t *desc)
 {
 	uint32_t crc = desc->op ^ desc->flags;
 
@@ -393,10 +395,41 @@ int libHidDisplay_GetReportWait (teensyRawHidcxt_t *ctx, touch_t *touch)
 		if (crc == header->crc && header->op == RAWHID_OP_TOUCH){
 			memcpy(touch, &header->u.touch, sizeof(*touch));
 			//printf("libHidDisplay_GetReportWait: crc %X %X, %i\n", crc, header->crc, touch->tPoints);
+			
 			if (touch->tPoints)
 				return touch->tPoints;
 			else
 				return -1;	// release
+		}
+	}
+	return 0;
+}
+
+int libHidDisplay_GetReportWaitEx (teensyRawHidcxt_t *ctx, int *reportType, void *report)
+{
+	int ret = libHidDisplay_ReadData(ctx, ctx->buffer, ctx->wMaxPacketSize);
+	if (ret == (int)ctx->wMaxPacketSize){
+		rawhid_header_t *header = (rawhid_header_t*)ctx->buffer;
+		uint32_t crc = calcWriteCrc(header);
+		
+		if (crc == header->crc){
+			if (header->op == RAWHID_OP_TOUCH){
+				*reportType = RAWHID_OP_TOUCH;
+				touch_t *touch = (touch_t*)report;
+				memcpy(touch, &header->u.touch, sizeof(*touch));
+				
+				//printf("libHidDisplay_GetReportWait: crc %X %X, %i\n", crc, header->crc, touch->tPoints);
+				if (touch->tPoints)
+					return touch->tPoints;
+				else
+					return -1;	// release
+			}else if (header->op == RAWHID_OP_ENCODER){
+				*reportType = RAWHID_OP_ENCODER;
+				encodersrd_t *encoders = (encodersrd_t*)report;
+				memcpy(encoders, &header->u.encoders, sizeof(*encoders));
+				
+				return encoders->changed;
+			}
 		}
 	}
 	return 0;
