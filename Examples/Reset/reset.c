@@ -11,7 +11,7 @@
 #include <string.h>
 #include <conio.h>
 #include <inttypes.h>
-#include "../../libHidDisplay/libHidDisplay.h"
+#include <libHidDisplay.h>
 
 
 
@@ -40,7 +40,7 @@ static int openDisplayWait (const int timeMs)
 
 int display_init ()
 {
-	if (!libHidDisplay_OpenDisplay(&hid_ctx)){
+	if (!libHidDisplay_OpenDisplay(&hid_ctx, 0)){
 		if (!openDisplayWait(500))
 			return 0;
 	}
@@ -69,8 +69,7 @@ int display_init ()
 		free(dummyImage);
 	}
 	
-	//printf("Display Width:%i Height:%i\n%s\n", DWIDTH, DHEIGHT, desc.u.cfg.string);
-	printf("Device: %s\n", desc.u.cfg.string);
+	printf("Found device: %s\nWxH:%ix%i\n", desc.u.cfg.string, DWIDTH, DHEIGHT);
 	return 1;
 }
 

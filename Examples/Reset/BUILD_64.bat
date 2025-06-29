@@ -5,10 +5,10 @@ del *.o
 
 
 
-SET HIDDISPLAY=../../libHidDisplay/libHidDisplayAsync.c ../../libHidDisplay/libHidDisplay.c
-
-gcc -m64 -Wall -static -O2 -c reset.c %HIDDISPLAY% -DLIBUSB_BLOCKS -Wno-unused-function -std=gnu11 
-gcc -m64 reset.o libHidDisplay.o libHidDisplayAsync.o ../../libHidDisplay/libusb64.a -o reset64.exe 
+set HDLIBDIR=../../libHidDisplay
+set HDLIB=%HDLIBDIR%/libHidDisplay.c %HDLIBDIR%/libHidDisplayAsync.c
+gcc -m64 -Wall -static -I%HDLIBDIR% -std=gnu18 -Ofast -c reset.c -DLIBUSB_BLOCKS -Wno-unused-function
+gcc -m64 %HDLIB% reset.o ../../libHidDisplay/libusb64.a -o reset64.exe 
 
 strip reset64.exe 
 
