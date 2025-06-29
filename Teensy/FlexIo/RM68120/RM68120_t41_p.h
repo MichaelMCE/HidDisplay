@@ -78,7 +78,7 @@ class RM68120_t41_p {
     void displayInfo();
     void setAddrWindow(uint16_t x1, uint16_t y1, uint16_t x2, uint16_t y2);
 
-    void pushPixels16bit (uint16_t * pcolors, uint16_t x1, uint16_t y1, uint16_t x2, uint16_t y2);
+    void pushPixels16bit (const uint16_t * pcolors, uint16_t x1, uint16_t y1, uint16_t x2, uint16_t y2);
     void pushPixels16bitAsync (const uint16_t * pcolors, uint16_t x1, uint16_t y1, uint16_t x2, uint16_t y2);
     uint8_t readCommand(const uint16_t cmd);
     
@@ -145,8 +145,8 @@ class RM68120_t41_p {
     void FlexIO_Config_SnglBeat_Read();
 
     void SglBeatWR_nPrm_8  (uint32_t const cmd, uint8_t const *value,  uint32_t const length);
-    //void sglBeatWR_nPrm_16 (uint32_t const cmd, const uint16_t *value, uint32_t const length);
-    void sglBeatWR_nPrm_16 (uint32_t const cmd, uint16_t *value, const uint32_t length);
+    void sglBeatWR_nPrm_16 (uint32_t const cmd, const uint16_t *value, uint32_t const length);
+    //void sglBeatWR_nPrm_16 (uint32_t const cmd, uint16_t *value, const uint32_t length);
     void MulBeatWR_nPrm_IRQ(uint32_t const cmd, const void *value, uint32_t const length);
     
     void microSecondDelay();

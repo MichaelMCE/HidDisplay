@@ -234,9 +234,13 @@ int touch_process (touch_t *touch)
 		for (int i = 0; i < touch->tPoints; i++){
 			if (!touch_read(touch)) break;
 		}
+
+
+		touchInSignal--;
+	}else{
+		touchInSignal = 0;
 	}
 	
-	touchInSignal = 0;
 	return touch->tPoints;
 }
 

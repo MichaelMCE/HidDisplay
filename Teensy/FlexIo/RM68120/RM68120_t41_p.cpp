@@ -263,7 +263,7 @@ FASTRUN void RM68120_t41_p::setAddrWindow (uint16_t x1, uint16_t y1, uint16_t x2
 	sendCmd16Arg8(RM68120_RASET + 3, y2 & 0xFF);
 }
 
-FASTRUN void RM68120_t41_p::pushPixels16bit (uint16_t *pixels, uint16_t x1, uint16_t y1, uint16_t x2, uint16_t y2)
+FASTRUN void RM68120_t41_p::pushPixels16bit (const uint16_t *pixels, uint16_t x1, uint16_t y1, uint16_t x2, uint16_t y2)
 {
 #if 0
 
@@ -940,7 +940,7 @@ FASTRUN void RM68120_t41_p::FlexIO_Config_SnglBeat ()
 }
 
 #include <USBHost_t36.h>
-FASTRUN void RM68120_t41_p::sglBeatWR_nPrm_16 (uint32_t const cmd, uint16_t *value, const uint32_t length)
+FASTRUN void RM68120_t41_p::sglBeatWR_nPrm_16 (uint32_t const cmd, const uint16_t *value, const uint32_t length)
 {
     NVIC_DISABLE_IRQ(IRQ_USBHS);
     NVIC_DISABLE_IRQ(IRQ_USBPHY0);
