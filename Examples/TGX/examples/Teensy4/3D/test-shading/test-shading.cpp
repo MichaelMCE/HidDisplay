@@ -14,7 +14,7 @@
 #include <tgx.h>
 #include <stdio.h>
 #include <string.h>
-#include "../../../../../../libHidDisplay/libHidDisplay.h"
+#include <libHidDisplay.h>
 
 
 
@@ -41,9 +41,9 @@ using namespace tgx;
 #define FLASHMEM  
 #define DMAMEM  
 #define elapsedMillis 	uint64_t
+
 static teensyRawHidcxt_t ctx;
-
-
+static char DEVNAME[64];
 static int DWIDTH = 0;
 static int DHEIGHT = 0;
 static int SLX = DWIDTH;
@@ -246,7 +246,7 @@ int openDisplayWait (const int timeMs)
 	for (int i = 0; i < loops; i++){
 		Sleep(delay);
 			
-		if (libHidDisplay_OpenDisplay(&ctx))
+		if (libHidDisplay_OpenDisplay(&ctx, 0))
 			return 1;
 	}
 	return 0;
@@ -254,7 +254,7 @@ int openDisplayWait (const int timeMs)
 
 int display_init ()
 {
-	if (!libHidDisplay_OpenDisplay(&ctx)){
+	if (!libHidDisplay_OpenDisplay(&ctx, 0)){
 		if (!openDisplayWait(500))
 			return 0;
 	}
@@ -267,6 +267,7 @@ int display_init ()
 	ctx.pitch = desc.u.cfg.pitch;
 	ctx.rgbClamp = desc.u.cfg.rgbMax;
 	
+	strncpy(DEVNAME, (char*)(&desc.u.cfg.string[0]), 32);
 	DWIDTH = ctx.width;
 	DHEIGHT = ctx.height;
 	
@@ -292,7 +293,7 @@ int main ()
 	if (!display_init())
 		return 0;
 	
-	printf("%i %i\n", SLX, SLY);
+	printf("Display: %s\nWxH: %ix%i\n", (char*)DEVNAME, SLX, SLY);
 
 	
 	setup();
