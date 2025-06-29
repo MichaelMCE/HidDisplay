@@ -19,8 +19,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <inttypes.h>
-
-#include "../../libHidDisplay/libHidDisplay.h"
+#include <libHidDisplay.h>
 #include "drawop.h"
 
 

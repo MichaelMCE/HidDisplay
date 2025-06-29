@@ -6,8 +6,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <inttypes.h>
-
-#include "../../libHidDisplay/libHidDisplay.h"
+#include <libHidDisplay.h>
 #include "drawop.h"
 #include "image_256x142_16.h"
 
@@ -34,8 +33,8 @@ enum colIdx {
 
 
 
-static int DWIDTH = 0;
-static int DHEIGHT = 0;
+static int DWIDTH = 960;
+static int DHEIGHT = 540;
 static int DPITCH = 0;
 static teensyRawHidcxt_t hid_ctx;
 
@@ -58,7 +57,7 @@ static int openDisplayWait (const int timeMs)
 
 int display_init ()
 {
-	if (!libHidDisplay_OpenDisplay(&hid_ctx)){
+	if (!libHidDisplay_OpenDisplay(&hid_ctx, 0)){
 		if (!openDisplayWait(500))
 			return 0;
 	}
@@ -87,8 +86,7 @@ int display_init ()
 		free(dummyImage);
 	}
 	
-	//printf("Display Width:%i Height:%i\n%s\n", DWIDTH, DHEIGHT, desc.u.cfg.string);
-	printf("Device: %s\n\n", desc.u.cfg.string);
+	printf("Found device: %s\nWxH:%ix%i\n", desc.u.cfg.string, DWIDTH, DHEIGHT);
 	return 1;
 }
 
