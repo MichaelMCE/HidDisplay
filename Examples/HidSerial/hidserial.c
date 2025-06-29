@@ -7,7 +7,9 @@
 
 
 #define HID_VID 0x16C0
-#define HID_PID 0x0486
+
+#define HID_PID 0x04D2
+//#define HID_PID 0x0486
 
 
 int main (int argc, char *argv[])
@@ -28,7 +30,7 @@ int main (int argc, char *argv[])
 	}
 
 	struct hid_device_info *deviceInfo = deviceRoot;
-	if (deviceInfo->interface_number == 0){						// HidDisplay serial port is on interface 1
+	if (1 && deviceInfo->interface_number == 0){						// HidDisplay serial port is on interface 1
 		if (!deviceInfo->next){
 			printf("Device found but Serial unavailable\n");	// Interface 1 not found on device, is this an Arduino compatible device?
 			hid_free_enumeration(deviceRoot);
