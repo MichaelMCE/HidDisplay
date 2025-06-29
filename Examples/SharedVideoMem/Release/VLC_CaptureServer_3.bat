@@ -1,17 +1,17 @@
 @echo off
 
 rem Set VLC location - Is Need for drag'n'drop - No quotes
-SET VLCPATH=M:\RamdiskTemp\vlc-3.0.18
+SET VLCPATH=C:\Program Files (x86)\VLC
 
 rem Display
-SET WIDTH=854
+SET WIDTH=800
 SET HEIGHT=480
 
 rem Goom Width must be divisible by 64
-SET GOOM_WIDTH=854
-SET GOOM_HEIGHT=480
-rem SET GOOM_WIDTH=%WIDTH%
-rem SET GOOM_HEIGHT=%HEIGHT%
+rem SET GOOM_WIDTH=832
+rem SET GOOM_HEIGHT=48
+SET GOOM_WIDTH=%WIDTH%
+SET GOOM_HEIGHT=%HEIGHT%
 
 rem for audio visuals plugin
 SET EFFECT_WIDTH=%WIDTH%
