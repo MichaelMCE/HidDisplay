@@ -23,7 +23,7 @@
 #include <Color.cpp>
 #include <stdio.h>
 #include <string.h>
-#include "../../../../../../libHidDisplay/libHidDisplay.h"
+#include <libHidDisplay.h>
 
 
 // let's not burden ourselves with the tgx:: prefix
@@ -43,9 +43,9 @@ using namespace tgx;
 #define DMAMEM  
 #define elapsedMillis uint64_t
 #define elapsedMicros uint64_t
+
 static teensyRawHidcxt_t ctx;
-
-
+static char DEVNAME[64];
 static int DWIDTH = 0;
 static int DHEIGHT = 0;
 static int SLX = DWIDTH;
@@ -118,8 +118,7 @@ void update ()
 {
 	static uint64_t tstart = GetTickCount();
 	
-	libHidDisplay_WriteImageEx(&ctx, fb, 246);
-	
+	libHidDisplay_WriteImage(&ctx, fb);
 	fcount++;
 	
 	if (!(fcount%100)){
@@ -136,7 +135,7 @@ int openDisplayWait (const int timeMs)
 	for (int i = 0; i < loops; i++){
 		Sleep(delay);
 			
-		if (libHidDisplay_OpenDisplay(&ctx))
+		if (libHidDisplay_OpenDisplay(&ctx, 0))
 			return 1;
 	}
 	return 0;
@@ -144,7 +143,7 @@ int openDisplayWait (const int timeMs)
 
 int display_init ()
 {
-	if (!libHidDisplay_OpenDisplay(&ctx)){
+	if (!libHidDisplay_OpenDisplay(&ctx, 0)){
 		if (!openDisplayWait(500))
 			return 0;
 	}
@@ -156,6 +155,7 @@ int display_init ()
 	ctx.height = desc.u.cfg.height;
 	ctx.pitch = desc.u.cfg.pitch;
 	
+	strncpy(DEVNAME, (char*)(&desc.u.cfg.string[0]), 32);
 	DWIDTH = ctx.width;
 	DHEIGHT = ctx.height;
 	
@@ -181,10 +181,8 @@ int main ()
 	if (!display_init())
 		return 0;
 	
-	printf("%i %i\n", SLX, SLY);
+	printf("Display: %s\nWxH: %ix%i\n", (char*)DEVNAME, SLX, SLY);
 
-
-	
     int t;
 	uint64_t em = 0;
 	uint64_t time0 = GetTickCount();
