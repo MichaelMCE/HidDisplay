@@ -15,6 +15,7 @@
 #define RAWHID_OP_PRIMATIVE		9		// drawing operation(s)
 #define RAWHID_OP_PALETTE		10		// colour look up table
 #define RAWHID_OP_RESET			11		// reboot device
+#define RAWHID_OP_ENCODER		12		// rotary encoder(s)
 
 #define RAWHID_GFX_CLEAR		1		// clear internal buffer with colour n, don't update display. .var16[0]/16bit colour, .var32[0]/24/32bit colour
 #define RAWHID_GFX_SCROLL		2		// hardware scroll buffer n rows/cols. only if display support scroll
@@ -105,6 +106,21 @@ typedef struct {
 	}tiles;
 }config_t;
 
+
+#define ENCODER_TOTAL	3
+
+typedef struct _encrd {
+	int16_t buttonPress;		// number of times switch was pressed since last read. can be zero.
+	int16_t positionChange;	    // cumulative distance travelled since last read. can be zero.
+}encoderrd_t;
+
+typedef struct _encsrd {
+	uint16_t size;		// size (in bytes) of this struct
+	uint16_t total;		// number of encoders described (ie; ENCODER_TOTAL). does not change between hardware.
+	uint32_t changed;	// what changed (packed)
+	encoderrd_t encoder[ENCODER_TOTAL];
+}encodersrd_t;
+
 // Synchronize this with Teensy.ino
 typedef struct _header_t {
 	uint8_t op;						// RAWHID_OP_
@@ -191,6 +207,7 @@ typedef struct _header_t {
 
 		config_t config;			// sizeof(config_t) should be 8 bytes
 		touch_t touch;				// sizeof(touch_t) should be 52 bytes
+		encodersrd_t encoders;
 	}u;
 
 	uint32_t crc;

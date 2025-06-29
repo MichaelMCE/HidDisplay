@@ -1,4 +1,4 @@
-
+#pragma once
 #ifndef _DEVICE_SERIAL_H
 #define _DEVICE_SERIAL_H
 

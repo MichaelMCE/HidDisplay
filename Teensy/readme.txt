@@ -1,7 +1,7 @@
 8bit and 16bit Parallel display driver for Teensy 4.1 microcontroller
 
 Supported controllers:
-NT35516		960x640
+NT35516		960x540
 ILI9806		854x480
 RM68120		800x480
 R61408 		800x480
@@ -14,7 +14,6 @@ ST7735		160x128
 WIP:
 NT35510		800x480
 LG4572B		800x480
-
 
 
 Wiring:
@@ -68,8 +67,8 @@ Usually only the SPI is labelled.
 
 
          AP040IPS15DP    TK050F5590    AC3585    AC1590
-SDA:         SDA            T_CS        T_CS      MOSI      
-SCL:         SCK            SCK         SCL       SCK   
+SDA:         SDA            T_CS        T_CS      MOSI
+SCL:         SCK            SCK         SCL       SCK
 INT:         INT            INT         INT       INT
 
 

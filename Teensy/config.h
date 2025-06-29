@@ -13,7 +13,7 @@
 #define BUFFER_LAYERS_TOTAL		8		// make room for n backbuffer layers. Each layer size is = (WIDTH * HEIGHT * 2)
 #define ENABLE_TOUCH_FT5216		1		// enable i2c touch controller and reports
 #define ENABLE_EXTRAM_CACHE		0		// enable PSRAM precache if using USE_EXTMEM_BUFFER. Is experimental.
-#define ENABLE_OP_PRIMATIVES	1		// enable drawing api - 32bit HOST only. Not yet compatible with 64bit client build. Requires extmem/PSRAM
+#define ENABLE_OP_PRIMATIVES	0		// enable drawing api - 32bit HOST only. Not yet compatible with 64bit client build. Requires extmem/PSRAM
 
 
 
@@ -119,11 +119,11 @@
 // Read is 37
 // Write is 36
 
-#define SPI_RST					8
-#define SPI_DC					9
-#define SPI_CS					10
-#define SPI_MOSI				11
-#define SPI_SCK					13
+#define SPI_RST					34 //8
+#define SPI_DC					35 //9
+#define SPI_CS					38 //10
+#define SPI_MOSI				26 //11
+#define SPI_SCK					27 //13
 
 
 #define FT5216_INT				34		// FT5216 data ready interrupt pin

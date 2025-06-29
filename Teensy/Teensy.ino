@@ -2,8 +2,10 @@
 /* 
 
 Intended for compiling with: https://github.com/MichaelMCE/FlexDisplay
-To compile: In Arduino Tools menu, select USB Type 'Raw HID 512'
-Timings intended for and tested with CPU speed @ 720mhz
+To compile: From the Arduino Tools menu, select USB Type 'Raw HID 512'.
+			Select 'Faster' optimization.
+			Select 720Mhz CPU speed
+
 
 
 USB Detail:
@@ -24,6 +26,7 @@ USB Detail:
 #include "hid/usb_hid.h"
 #include "hid/usb_hid.c"
 #include "Teensy.h"
+#include "touch.h"
 
 #if ENABLE_OP_PRIMATIVES
 #include "draw/drawops.h"
@@ -193,6 +196,9 @@ void setup ()
 	tft_clear(0x0000);		// some displays require two initial clears
 	tft_clear(0x0000);		// first is somethings corrupted
 
+	pins_init();
+	dials_init();
+
 #if USE_STARTUP_IMAGE
 	setStartupImage();
 	setStartupImage();
@@ -356,6 +362,96 @@ void opGfx (rawhid_header_t *desc)
 	}
 }
 
+
+#if ENABLE_TOUCH_FT5216
+static void opTouchCtrl (touchCtx_t *ctx, rawhid_header_t *header)
+{
+	if (header->flags&RAWHID_OP_FLAG_REPORTSON){
+		if (!ctx->enabled) touch_init();
+		ctx->enabled = TOUCH_REPORTS_ON;
+		
+	}else if (header->flags&RAWHID_OP_FLAG_REPORTSOFF){
+		ctx->enabled = TOUCH_REPORTS_OFF;
+	}
+	
+	if (header->flags&RAWHID_OP_FLAG_TOUCHDIR){
+		ctx->rotate = header->u.touch.direction;
+		if (ctx->rotate == TOUCH_DIR_DEFAULT)
+			ctx->rotate = TOUCH_ROTATION;
+	}
+}
+
+static void opSendTouch (touchCtx_t *ctx, touch_t *touch, const int isReleased)
+{
+	rawhid_header_t *desc = &ctx->header;
+	memset(desc, 0, sizeof(*desc));
+
+	desc->op = RAWHID_OP_TOUCH;
+	desc->u.touch = *touch;
+	desc->u.touch.time = ctx->t0;
+	
+	if (!isReleased){
+		desc->u.touch.flags = RAWHID_OP_TOUCH_POINTS;
+	}else{
+		desc->u.touch.flags = RAWHID_OP_TOUCH_RELEASE;
+		ctx->t0 = 0;
+	}
+	
+	desc->crc = calcWriteCrc(desc);
+	usb_send(desc, sizeof(*desc));
+}
+
+static void opSendRotary (touchCtx_t *ctx, encodersrd_t *encoders)
+{
+	rawhid_header_t *desc = &ctx->header;
+	memset(desc, 0, sizeof(*desc));
+
+	encoders->size = sizeof(encodersrd_t);
+	encoders->total = ENCODER_TOTAL;
+
+	desc->op = RAWHID_OP_ENCODER;
+	desc->u.encoders = *encoders;
+	desc->crc = calcWriteCrc(desc);
+	usb_send(desc, sizeof(*desc));
+}
+	
+static void do_touch (touchCtx_t *ctx, touch_t *touch)
+{
+	static int noTouchCt = 0;
+	
+	if (ctx->enabled == TOUCH_REPORTS_HALT)
+		return;
+
+	if (touch_isPressed()){
+		memset(touch, 0, sizeof(touch_t));
+		touch->direction = ctx->rotate;
+				
+		if (touch_process(touch)){
+			ctx->pressed = 1;
+			//for (int i = 0; i < touch->tPoints; i++)
+			//	printf("Touch %i: %i %i\r\n", i+1, touch->points[i].x, touch->points[i].y);
+			if (ctx->enabled == TOUCH_REPORTS_ON)
+				opSendTouch(ctx, touch, 0);
+		}
+		noTouchCt = 1;
+	}else if (ctx->pressed){
+		if (++noTouchCt == 2){	// don't be so eager to send a touch release, allow to check again to be sure
+			ctx->pressed = 0;
+			//printf("Touch released\r\n");
+			if (ctx->enabled == TOUCH_REPORTS_ON)
+				opSendTouch(ctx, touch, 1);
+		}
+	}
+	
+	encodersrd_t encoders;
+	if (encoder_isReady(&encoders)){
+		opSendRotary(ctx, &encoders);
+	}
+
+}
+#endif
+
+
 #if USE_STRIP_RENDERER
 void opRecvImage (rawhid_header_t *header)
 {
@@ -433,73 +529,6 @@ void opRecvImageArea (rawhid_header_t *header)
 	if (updateDisplay)
 		tft_update_area(x1, y1, x2, y2);
 }
-
-
-#if ENABLE_TOUCH_FT5216
-static void opTouchCtrl (touchCtx_t *ctx, rawhid_header_t *header)
-{
-	if (header->flags&RAWHID_OP_FLAG_REPORTSON){
-		if (!ctx->enabled) touch_init();
-		ctx->enabled = TOUCH_REPORTS_ON;
-	}else if (header->flags&RAWHID_OP_FLAG_REPORTSOFF){
-		ctx->enabled = TOUCH_REPORTS_OFF;
-	}
-	
-	if (header->flags&RAWHID_OP_FLAG_TOUCHDIR)
-		ctx->rotate = header->u.touch.direction;
-		if (ctx->rotate == TOUCH_DIR_DEFAULT)
-			ctx->rotate = TOUCH_ROTATION;
-}
-
-static void opSendTouch (touchCtx_t *ctx, touch_t *touch, const int isReleased)
-{
-	rawhid_header_t *desc = &ctx->header;
-	memset(desc, 0, sizeof(*desc));
-
-	desc->op = RAWHID_OP_TOUCH;
-	desc->u.touch = *touch;
-	desc->u.touch.time = ctx->t0;
-	
-	if (!isReleased){
-		desc->u.touch.flags = RAWHID_OP_TOUCH_POINTS;
-	}else{
-		desc->u.touch.flags = RAWHID_OP_TOUCH_RELEASE;
-		ctx->t0 = 0;
-	}
-	
-	desc->crc = calcWriteCrc(desc);
-	usb_send(desc, sizeof(*desc));
-}
-	
-static void do_touch (touchCtx_t *ctx, touch_t *touch)
-{
-	static int noTouchCt = 0;
-	
-	if (ctx->enabled == TOUCH_REPORTS_HALT)
-		return;
-
-	if (touch_isPressed()){
-		memset(touch, 0, sizeof(touch_t));
-		touch->direction = ctx->rotate;
-				
-		if (touch_process(touch)){
-			ctx->pressed = 1;
-			for (int i = 0; i < touch->tPoints; i++)
-				printf("Touch %i: %i %i\r\n", i+1, touch->points[i].x, touch->points[i].y);
-			if (ctx->enabled == TOUCH_REPORTS_ON)
-				opSendTouch(ctx, touch, 0);
-		}
-		noTouchCt = 1;
-	}else if (ctx->pressed){
-		if (++noTouchCt == 3){	// don't be so eagar to send a touch release, allow to check again to be sure
-			ctx->pressed = 0;
-			printf("Touch released\r\n");
-			if (ctx->enabled == TOUCH_REPORTS_ON)
-				opSendTouch(ctx, touch, 1);
-		}
-	}
-}
-#endif
 
 
 #if ENABLE_OP_PRIMATIVES
@@ -777,5 +806,9 @@ void loop ()
 	  }else if (op == RAWHID_OP_RESET){
 	  	  opReset(desc);
 	  }
+	  
+#if ENABLE_TOUCH_FT5216
+	  do_touch(&touchCtx, &touchCtx.touch);
+#endif
 	}
 }

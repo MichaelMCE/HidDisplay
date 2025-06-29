@@ -13,4 +13,12 @@ int touch_process (touch_t *touch);
 
 #endif
 
+
+
+
+void pins_init ();
+void dials_init ();
+int encoder_isReady (encodersrd_t *encoders);
+
+
 #endif

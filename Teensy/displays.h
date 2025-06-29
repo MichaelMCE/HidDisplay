@@ -3,7 +3,6 @@
 #define _DISPLAYS_H_
 
 
-
 #include "FlexIo/ILI9486/ILI9486_t41_p.h"
 #include "FlexIo/S6D04D1/S6D04D1_t41_p.h"
 #include "FlexIo/ILI9806/ILI9806_t41_p.h"
@@ -16,6 +15,8 @@
 #include "SPI/GC9A01A/GC9A01A_spi.h"
 #include "SPI/ST7735/ST7735_spi.h"
 
+
+#include "SPI/GC9A01A_rewrite/GC9A01A_spi.h"
 
 
 
