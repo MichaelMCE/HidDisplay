@@ -5,10 +5,11 @@
 #include <wchar.h>
 #include <inttypes.h>
 #include <process.h>
+#include <libHidDisplay.h>
+#include <mmx_rgb.h>
 #include "plugin.h"
 #include "scriptval.h"
-#include "../../libHidDisplay/libHidDisplay.h"
-#include "../../libHidDisplay/mmx_rgb.h"
+
 
 
 #define EXPORT			__declspec(dllexport)
@@ -161,7 +162,7 @@ static int openDisplayWait (const int timeMs)
 	for (int i = 0; i < loops; i++){
 		Sleep(delay);
 			
-		if (libHidDisplay_OpenDisplay(&rawhid.ctx))
+		if (libHidDisplay_OpenDisplay(&rawhid.ctx, 0))
 			return 1;
 	}
 	return 0;
@@ -256,7 +257,7 @@ void configTiles (rawHidDisplay_t *ctx)
 
 int teensyRawHid_init ()
 {
-	if (!libHidDisplay_OpenDisplay(&rawhid.ctx)){
+	if (!libHidDisplay_OpenDisplay(&rawhid.ctx, 0)){
 		if (!openDisplayWait(750))
 			return 0;
 	}
