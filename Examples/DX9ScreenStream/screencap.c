@@ -8,12 +8,7 @@
 #include <inttypes.h>
 #include <math.h>
 #include <d3d9.h>
-//#include <d3d11.h>
-//#include <dxgi.h>
-
-
-
-#include "../../libHidDisplay/libHidDisplay.h"
+#include <libHidDisplay.h>
 
 
 
@@ -63,7 +58,7 @@ static int openDisplayWait (const int timeMs)
 	for (int i = 0; i < loops; i++){
 		Sleep(delay);
 			
-		if (libHidDisplay_OpenDisplay(&hid_ctx))
+		if (libHidDisplay_OpenDisplay(&hid_ctx, 0))
 			return 1;
 	}
 	return 0;
@@ -71,7 +66,7 @@ static int openDisplayWait (const int timeMs)
 
 int display_init ()
 {
-	if (!libHidDisplay_OpenDisplay(&hid_ctx)){
+	if (!libHidDisplay_OpenDisplay(&hid_ctx, 0)){
 		if (!openDisplayWait(500))
 			return 0;
 	}
@@ -92,8 +87,7 @@ int display_init ()
 		return 0;
 	}
 
-	//printf("Display Width:%i Height:%i\n%s\n", DWIDTH, DHEIGHT, desc.u.cfg.string);
-	printf("Device: %s\n", desc.u.cfg.string);
+	printf("Found device: %s\nWxH:%ix%i\n", desc.u.cfg.string, DWIDTH, DHEIGHT);
 	return 1;
 }
 
