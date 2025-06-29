@@ -38,8 +38,7 @@ vlc.exe --vout=svmem --svmem-width=854 --svmem-height=480 --svmem-chroma=RV16 "v
 #include <conio.h>
 #include <inttypes.h>
 #include <math.h>
-
-#include "../../libHidDisplay/libHidDisplay.h"
+#include <libHidDisplay.h>
 #include "plugin/svmem.h"
 
 // will store display dimensions 
@@ -65,7 +64,7 @@ static imagemap_t img;
 
 
 
-static int openSharedMemory (imagemap_t *img, const char *name)
+int openSharedMemory (imagemap_t *img, const char *name)
 {
 	img->hMapFile = OpenFileMapping(FILE_MAP_ALL_ACCESS, TRUE, VLC_SMEMNAME);
 	if (img->hMapFile != NULL){
@@ -83,13 +82,13 @@ static int openSharedMemory (imagemap_t *img, const char *name)
 	return 0;
 }
 
-static void closeSharedMemory (imagemap_t *img)
+void closeSharedMemory (imagemap_t *img)
 {
 	UnmapViewOfFile(img->hMem);
 	CloseHandle(img->hMapFile);
 }
 
-static int openDisplayWait (const int timeMs)
+int openDisplayWait (const int timeMs)
 {
 	const int delay = 20;
 	const int loops = timeMs/delay;
@@ -97,7 +96,7 @@ static int openDisplayWait (const int timeMs)
 	for (int i = 0; i < loops; i++){
 		Sleep(delay);
 			
-		if (libHidDisplay_OpenDisplay(&ctx))
+		if (libHidDisplay_OpenDisplay(&ctx, 0))
 			return 1;
 	}
 	return 0;
@@ -105,7 +104,7 @@ static int openDisplayWait (const int timeMs)
 
 int display_init ()
 {
-	if (!libHidDisplay_OpenDisplay(&ctx)){
+	if (!libHidDisplay_OpenDisplay(&ctx, 0)){
 		if (!openDisplayWait(500))
 			return 0;
 	}
@@ -126,14 +125,15 @@ int display_init ()
 		return 0;
 	}
 
-	//printf("Display Width:%i Height:%i\n%s\n", DWIDTH, DHEIGHT, desc.u.cfg.string);
-	printf("Found device: %s\n", desc.u.cfg.string);
+	printf("Found device: %s\nWxH:%ix%i\n", desc.u.cfg.string, DWIDTH, DHEIGHT);
 	return 1;
 }
 
 // when source and destination widths match
-static int updateDisplay_aligned (uint16_t *pixels, const int yOffset, const int stripHeight)
+int updateDisplay_aligned (uint16_t *pixels, const int yOffset, const int stripHeight)
 {
+	//printf("updateDisplay_aligned\n");
+	
 	int ret = 0;
 	const int twrites = img.height / stripHeight;
 	
@@ -154,8 +154,10 @@ static int updateDisplay_aligned (uint16_t *pixels, const int yOffset, const int
 }
 
 // when source destination width is smaller than device width it must be realigned
-static int updateDisplay_unaligned (uint16_t *pixels, const int yOffset, const int stripHeight)
+int updateDisplay_unaligned (uint16_t *pixels, const int yOffset, const int stripHeight)
 {
+	//printf("updateDisplay_unaligned\n");
+	
 	int ret = 0;
 	const int twrites = img.height / stripHeight;
 	
@@ -189,8 +191,10 @@ static int updateDisplay_unaligned (uint16_t *pixels, const int yOffset, const i
 }
 
 // when source destination width is smaller than device width it must be realigned
-static int updateDisplay_unaligned_op (uint16_t *pixels, const int yOffset, const int stripHeight)
+int updateDisplay_unaligned_op (uint16_t *pixels, const int yOffset, const int stripHeight)
 {
+	//printf("updateDisplay_unaligned_op\n");
+	
 	int ret = 0;
 	const int twrites = img.height / stripHeight;
 
@@ -302,6 +306,7 @@ int main (int argc, char* argv[])
 						img.height = svmem->hdr.height;
 						img.yOffset = abs(DHEIGHT - svmem->hdr.height) / 2;
 						
+						memset((void*)&svmem->pixels, 0, svmem->hdr.vsize);
 						memset(img.frame, 0, img.frameAllocSize);
 						libHidDisplay_WriteImage(&ctx, img.frame);
 
@@ -322,19 +327,22 @@ int main (int argc, char* argv[])
 
 					int w, h;
 					imageBestFit(DWIDTH, DHEIGHT, svmem->hdr.swidth, svmem->hdr.sheight, &w, &h);
-					//printf("%i %i, %i %i, %i %i\n", DWIDTH, DHEIGHT, svmem->hdr.swidth, svmem->hdr.sheight, w, h);
-
+					//printf("%i %i, %i %i, %i %i, %i %i\n", img.width, img.height, DWIDTH, DHEIGHT, svmem->hdr.swidth, svmem->hdr.sheight, w, h);
 					int devStatus = 0;
-					if (w < DWIDTH){
-						int x = (DWIDTH - w) / 2;
+
+					/*if (w < DWIDTH){
+						int x = ((DWIDTH - w) / 2);
 						devStatus = libHidDisplay_WriteArea(&ctx, img.frame, x, 0, x+w-1, h-1);
-					}else if (img.width == DWIDTH)			// stripHeight should match that of the display
+					}else */if (img.width == DWIDTH)			// stripHeight should match that of the display
 						devStatus = updateDisplay_aligned((uint16_t*)img.frame, img.yOffset, desc.u.cfg.stripHeight);
-					else //if ((abs(DWIDTH-img.width) > 32))	// intended for vertical videos
+					else if ((abs(DWIDTH-img.width) > 32))	// intended for vertical videos
 						devStatus = updateDisplay_unaligned_op((uint16_t*)img.frame, img.yOffset, desc.u.cfg.stripHeight);
-					//else
-					//	devStatus = updateDisplay_unaligned((uint16_t*)img.frame, img.yOffset, desc.u.cfg.stripHeight);
-					if (!devStatus) break;
+					else
+						devStatus = updateDisplay_unaligned((uint16_t*)img.frame, img.yOffset, desc.u.cfg.stripHeight);
+					if (!devStatus){
+						printf("no converter found\ngoing down\n");
+						break;
+					}
 				}
 			}else{
 				Sleep(25);
@@ -350,8 +358,6 @@ int main (int argc, char* argv[])
 		closeSharedMemory(&img);	
 	}
 
-
 	libHidDisplay_Close(&ctx);
-
 	return 1;
 }
