@@ -6,7 +6,7 @@
 #include <inttypes.h>
 #include <process.h>
 #include <libHidDisplay.h>
-#include <mmx_rgb.h>
+
 #include "plugin.h"
 #include "scriptval.h"
 
@@ -36,30 +36,39 @@ static rawHidDisplay_t rawhid;
 
 static void frame32ToBuffer16 (uint8_t *pixels, uint8_t *buffer, const int width, const int height, const int dpitch)
 {
-	if  (!rawhid.ctx.rgbClamp){
-		rgb_32_to_16_mmx(pixels, width, height, buffer, width*4, dpitch);
-	}else{
+	uint16_t *out = (uint16_t*)buffer;
+	TRGBA *in = (TRGBA*)pixels;
+	TRGBA *p;
+	const int cpitch = dpitch;
+	const int fpitch = width;
 	
-		uint16_t * restrict out = (uint16_t*)buffer;
-		TRGBA * restrict in = (TRGBA*)pixels;
-		TRGBA * restrict p;
-		const int cpitch = dpitch;
-		const int fpitch = width;
+	for (int y = 0; y < height; y++){
+		p = in+(y*fpitch);
+		for (int x = 0; x < width; x++)
+			*(out+x) = (p[x].r&0xF8)>>3|(p[x].g&0xFC)<<3|(p[x].b&0xF8)<<8;
+		out = (uint16_t*)((uint8_t*)out+cpitch);
+	}
+}
+
+static void frame32ToBuffer16Clamp (uint8_t *pixels, uint8_t *buffer, const int width, const int height, const int dpitch)
+{
+	uint16_t *out = (uint16_t*)buffer;
+	TRGBA *in = (TRGBA*)pixels;
+	TRGBA *p;
+	const int cpitch = dpitch;
+	const int fpitch = width;
+	const uint8_t max = rawhid.ctx.rgbClamp;
 	
-		const uint8_t max = rawhid.ctx.rgbClamp;
-	
-		for (int y = 0; y < height; y++){
-			p = in+(y*fpitch);
-			for (int x = 0; x < width; x++){
+	for (int y = 0; y < height; y++){
+		p = in+(y*fpitch);
+		for (int x = 0; x < width; x++){
 		
-				if (p[x].r > max) p[x].r = max;
-				if (p[x].g > max) p[x].g = max;
-				if (p[x].b > max) p[x].b = max;
-		
-				*(out+x) = (p[x].r&0xF8)>>3|(p[x].g&0xFC)<<3|(p[x].b&0xF8)<<8;
-			}
-			out = (uint16_t*)((uint8_t*)out+cpitch);
+			if (p[x].r > max) p[x].r = max;
+			if (p[x].g > max) p[x].g = max;
+			if (p[x].b > max) p[x].b = max;
+			*(out+x) = (p[x].r&0xF8)>>3|(p[x].g&0xFC)<<3|(p[x].b&0xF8)<<8;
 		}
+		out = (uint16_t*)((uint8_t*)out+cpitch);
 	}
 }
 
@@ -127,7 +136,8 @@ int teensyRawHid_Update (teensyRawHidcxt_t *ctx, uint8_t *pixels, const int widt
 	frame32ToBuffer16(pixels, ctx->frame, width, height, ctx->pitch);
 
 	// update as a single image
-	return libHidDisplay_WriteImageAsync(ctx, ctx->frame);
+	//return libHidDisplay_WriteImageAsync(ctx, ctx->frame);
+	return libHidDisplay_WriteImage(ctx, ctx->frame);
 	
 	// update as two halves
 	//libHidDisplay_WriteArea(ctx, ctx->frame, 0, 0, ctx->width-1, (ctx->height>>1)-1);
@@ -145,6 +155,7 @@ int teensyRawHid_Update (teensyRawHidcxt_t *ctx, uint8_t *pixels, const int widt
 		uint8_t *pix = (uint8_t*)ctx->frame + ((i*stripHeight) * ctx->width * 2);
 		libHidDisplay_WriteArea(ctx, pix, 0, i*stripHeight, ctx->width-1, (i*stripHeight)+stripHeight-1);
 	}*/
+	return 1;
 }
 
 CALLBACK void lcdmisc_destroy (LcdInfo *info)
