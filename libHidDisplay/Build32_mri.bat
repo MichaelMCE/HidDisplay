@@ -13,3 +13,9 @@ ranlib libhiddisplay.a
 del libhiddisplay_tmp.a
 del libHidDisplayAsync.o 
 del libHidDisplay.o
+
+strip HidDisplay.dll
+move HidDisplay.dll release/x32/HidDisplay.dll
+move libhiddisplay.dll.a release/x32/
+move libhiddisplay.a release/x32/
+
