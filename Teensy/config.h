@@ -128,7 +128,7 @@
 
 #define FT5216_INT				34		// FT5216 data ready interrupt pin
 #define FT5216_ADDR				0x38	// i2c address
-#define FT5216_SPEED			600000	// set speed in hz
+#define FT5216_SPEED			400000	// set speed in hz
 #define FT5216_obj				Wire2	// using i2c pins 24 & 25 on T4.1
 
 
@@ -147,4 +147,5 @@
 
 
 #endif
+
 
