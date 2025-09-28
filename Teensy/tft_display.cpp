@@ -79,7 +79,9 @@ void tft_init ()
 
 	// increase PSRAM clocks to max stable, ~130MHZ
 	CCM_CBCMR &= ~(CCM_CBCMR_FLEXSPI2_PODF_MASK | CCM_CBCMR_FLEXSPI2_CLK_SEL_MASK);		// clear settings
-	CCM_CBCMR |=  (CCM_CBCMR_FLEXSPI2_PODF(3)   | CCM_CBCMR_FLEXSPI2_CLK_SEL(3));		// 133 MHz
+	//CCM_CBCMR |=  (CCM_CBCMR_FLEXSPI2_PODF(3)   | CCM_CBCMR_FLEXSPI2_CLK_SEL(3));		// 133 MHz
+	//CCM_CBCMR |=  (CCM_CBCMR_FLEXSPI2_PODF(2)   | CCM_CBCMR_FLEXSPI2_CLK_SEL(3));		// 176 MHz
+	CCM_CBCMR |=  (CCM_CBCMR_FLEXSPI2_PODF(3)   | CCM_CBCMR_FLEXSPI2_CLK_SEL(1));		// 180 MHz
 #endif
 
 	display_begin(TFT_SPEED);
@@ -138,3 +140,4 @@ void tft_backlight (const uint8_t level)
 }
 
 #endif
+
