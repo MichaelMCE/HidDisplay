@@ -27,13 +27,6 @@ static uint8_t STORAGETYPE tft_buffer[layersTotal][CALC_PITCH_16(TFT_WIDTH)*TFT_
 
 
 
-/*
-layers_setActive
-layers_getActive
-layers_swap
-layers_next
-*/
-
 int tft_setWriteLayer (const int layerIdx)
 {
 	int old = layersActive;
@@ -140,4 +133,5 @@ void tft_backlight (const uint8_t level)
 }
 
 #endif
+
 
